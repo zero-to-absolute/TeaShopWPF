@@ -1,0 +1,65 @@
+<Window x:Class="TeaShopManager.Views.SupplierEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Поставщик"
+        Width="640"
+        Height="760"
+        MinWidth="600"
+        MinHeight="680"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        SizeToContent="WidthAndHeight">
+    <Border Margin="18"
+            Style="{StaticResource CardBorderStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Style="{StaticResource SectionTitleTextStyle}"
+                       FontSize="26"
+                       Text="{Binding WindowTitle}" />
+
+            <ScrollViewer Grid.Row="1"
+                          Margin="0,22,0,0"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock FontWeight="SemiBold" Text="Название поставщика" />
+                    <TextBox x:Name="SupplierNameTextBox" Margin="0,10,0,0" Style="{StaticResource InputTextBoxStyle}" />
+
+                    <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Контактное лицо" />
+                    <TextBox x:Name="ContactPersonTextBox" Margin="0,10,0,0" Style="{StaticResource InputTextBoxStyle}" />
+
+                    <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Телефон" />
+                    <TextBox x:Name="PhoneTextBox" Margin="0,10,0,0" Style="{StaticResource InputTextBoxStyle}" />
+
+                    <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Email" />
+                    <TextBox x:Name="EmailTextBox" Margin="0,10,0,0" Style="{StaticResource InputTextBoxStyle}" />
+
+                    <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Адрес" />
+                    <TextBox x:Name="AddressTextBox" Margin="0,10,0,0" Style="{StaticResource InputTextBoxStyle}" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <Grid Grid.Row="2"
+                  Margin="0,24,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Button Margin="0,0,10,0"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="Отмена"
+                        Click="CancelButton_OnClick" />
+                <Button Grid.Column="1"
+                        Margin="10,0,0,0"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Content="Сохранить"
+                        Click="SaveButton_OnClick" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,76 @@
+<Window x:Class="TeaShopManager.Views.OrderEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="560"
+        Height="420"
+        MinWidth="500"
+        MinHeight="360"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        SizeToContent="WidthAndHeight">
+    <Border Margin="18"
+            Style="{StaticResource CardBorderStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Style="{StaticResource SectionTitleTextStyle}"
+                       FontSize="24"
+                       Text="{Binding WindowTitle}" />
+
+            <ScrollViewer Grid.Row="1"
+                          Margin="0,22,0,0"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock FontWeight="SemiBold" Text="Дата заказа" />
+                    <DatePicker x:Name="OrderDatePicker"
+                                Margin="0,10,0,0"
+                                SelectedDateFormat="Short" />
+
+                    <TextBlock Margin="0,18,0,0"
+                               FontWeight="SemiBold"
+                               Text="Статус заказа" />
+                    <ComboBox x:Name="StatusComboBox"
+                              Margin="0,10,0,0"
+                              Height="52"
+                              Padding="12,6"
+                              ItemsSource="{Binding StatusItems}"
+                              DisplayMemberPath="Name"
+                              SelectedValuePath="Id" />
+
+                    <TextBlock Margin="0,18,0,0"
+                               FontWeight="SemiBold"
+                               Text="Пользователь" />
+                    <ComboBox x:Name="UserComboBox"
+                              Margin="0,10,0,0"
+                              Height="52"
+                              Padding="12,6"
+                              ItemsSource="{Binding UserItems}"
+                              DisplayMemberPath="Name"
+                              SelectedValuePath="Id" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <Grid Grid.Row="2"
+                  Margin="0,24,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Button Margin="0,0,10,0"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="Отмена"
+                        Click="CancelButton_OnClick" />
+                <Button Grid.Column="1"
+                        Margin="10,0,0,0"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Content="Сохранить"
+                        Click="SaveButton_OnClick" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
