@@ -353,6 +353,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
@@ -366,11 +367,37 @@
                                     Background="{StaticResource PanelBrush}"
                                     CornerRadius="14">
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Style="{StaticResource SelectedTabButtonStyle}"
-                                            Content="Все товары" />
+                                    <Button Content="Все товары"
+                                            Click="ShowAllProductsTabButton_OnClick">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource TabButtonStyle}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsShowingAllProducts}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                        <Setter Property="BorderThickness" Value="1" />
+                                                        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
                                     <Button Margin="8,0,0,0"
-                                            Style="{StaticResource TabButtonStyle}"
-                                            Content="Проверка минимальных остатков" />
+                                            Content="Минимальные остатки"
+                                            Click="ShowCriticalProductsTabButton_OnClick">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource TabButtonStyle}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsShowingCriticalProductsOnly}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                        <Setter Property="BorderThickness" Value="1" />
+                                                        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
                                 </StackPanel>
                             </Border>
 
@@ -428,10 +455,17 @@
                             </Grid>
                         </Border>
 
-                        <DataGrid Grid.Row="2"
+                        <TextBlock Grid.Row="2"
+                                   Margin="2,12,0,0"
+                                   Style="{StaticResource BodyTextStyle}"
+                                   Text="{Binding ProductInventoryCaption}" />
+
+                        <DataGrid x:Name="ProductsDataGrid"
+                                  Grid.Row="3"
                                   Margin="0,18,0,0"
                                   Style="{StaticResource ShellDataGridStyle}"
-                                  ItemsSource="{Binding Products}">
+                                  ItemsSource="{Binding Products}"
+                                  MouseDoubleClick="ProductsDataGrid_OnMouseDoubleClick">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Название товара" Binding="{Binding ProductName}" Width="*" />
                                 <DataGridTextColumn Header="Цена" Binding="{Binding Price}" Width="120" />
@@ -780,10 +814,16 @@
                                 <DataGridTextColumn Header="Сообщение" Binding="{Binding Message}" Width="*" />
                                 <DataGridTextColumn Header="Дата создания" Binding="{Binding CreatedAt}" Width="170" />
                                 <DataGridTextColumn Header="Статус" Binding="{Binding ReadState}" Width="140" />
-                                <DataGridTemplateColumn Header="Действия" Width="220">
+                                <DataGridTemplateColumn Header="Действия" Width="320">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
+                                                <Button Margin="0,0,8,0"
+                                                        Style="{StaticResource MiniActionButtonStyle}"
+                                                        Content="Прочитать"
+                                                        IsEnabled="{Binding CanMarkAsRead}"
+                                                        Tag="{Binding}"
+                                                        Click="MarkNotificationAsReadButton_OnClick" />
                                                 <Button Margin="0,0,8,0"
                                                         Style="{StaticResource MiniActionButtonStyle}"
                                                         Content="Изменить"
@@ -836,22 +876,30 @@
                             <DataGridTextColumn Header="Статус поставки" Binding="{Binding StatusName}" Width="170" />
                             <DataGridTextColumn Header="Поставщик" Binding="{Binding SupplierName}" Width="*" />
                             <DataGridTextColumn Header="Пользователь" Binding="{Binding UserName}" Width="150" />
-                            <DataGridTemplateColumn Header="Действия" Width="220">
+                            <DataGridTemplateColumn Header="Действия" Width="330">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
                                             <Button Margin="0,0,8,0"
                                                     Style="{StaticResource MiniActionButtonStyle}"
                                                     Content="Изменить"
+                                                    IsEnabled="{Binding CanModify}"
                                                     Tag="{Binding}"
                                                     Click="EditSupplyButton_OnClick" />
+                                            <Button Margin="0,0,8,0"
+                                                    Style="{StaticResource MiniActionButtonStyle}"
+                                                    Content="{Binding ReceiveActionText}"
+                                                    IsEnabled="{Binding CanReceive}"
+                                                    Tag="{Binding}"
+                                                    Click="ReceiveSupplyButton_OnClick" />
                                             <Button Style="{StaticResource MiniDangerButtonStyle}"
                                                     Content="Удалить"
+                                                    IsEnabled="{Binding CanModify}"
                                                     Tag="{Binding}"
                                                     Click="DeleteSupplyButton_OnClick" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
+                                         </StackPanel>
+                                     </DataTemplate>
+                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
@@ -898,10 +946,12 @@
                                             <Button Margin="0,0,8,0"
                                                     Style="{StaticResource MiniActionButtonStyle}"
                                                     Content="Изменить"
+                                                    IsEnabled="{Binding CanModify}"
                                                     Tag="{Binding}"
                                                     Click="EditSupplyDetailButton_OnClick" />
                                             <Button Style="{StaticResource MiniDangerButtonStyle}"
                                                     Content="Удалить"
+                                                    IsEnabled="{Binding CanModify}"
                                                     Tag="{Binding}"
                                                     Click="DeleteSupplyDetailButton_OnClick" />
                                         </StackPanel>

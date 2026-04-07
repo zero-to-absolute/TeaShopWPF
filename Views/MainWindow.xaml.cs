@@ -1,4 +1,7 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using TeaShopManager.Models;
 using TeaShopManager.ViewModels;
 
@@ -498,6 +501,16 @@ public partial class MainWindow : Window
         });
     }
 
+    private void MarkNotificationAsReadButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ExecuteWithHandling(() =>
+        {
+            var vm = RequireViewModel();
+            if (((FrameworkElement)sender).Tag is not NotificationPreviewItem item || !item.CanMarkAsRead) return;
+            vm.MarkNotificationAsRead(item.NotificationId);
+        });
+    }
+
     private void AddSupplyButton_OnClick(object sender, RoutedEventArgs e)
     {
         ExecuteWithHandling(() =>
@@ -545,6 +558,22 @@ public partial class MainWindow : Window
             {
                 vm.DeleteSupply(item.SupplyId);
             }
+        });
+    }
+
+    private void ReceiveSupplyButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ExecuteWithHandling(() =>
+        {
+            var vm = RequireViewModel();
+            if (((FrameworkElement)sender).Tag is not SupplyPreviewItem item || !item.CanReceive) return;
+            if (!ConfirmDelete($"Принять поставку {item.SupplyCode}? После приёмки она начнёт учитываться в остатках."))
+            {
+                return;
+            }
+
+            vm.ReceiveSupply(item.SupplyId);
+            MessageBox.Show($"Поставка {item.SupplyCode} принята и учтена в складских остатках.", "TeaShopManager", MessageBoxButton.OK, MessageBoxImage.Information);
         });
     }
 
@@ -673,6 +702,34 @@ public partial class MainWindow : Window
         });
     }
 
+    private void ProductsDataGrid_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        ExecuteWithHandling(() =>
+        {
+            if (FindVisualParent<Button>(e.OriginalSource as DependencyObject) is not null)
+            {
+                return;
+            }
+
+            if (sender is not DataGrid { SelectedItem: ProductPreviewItem item })
+            {
+                return;
+            }
+
+            ShowProductMovementsDialog(item);
+        });
+    }
+
+    private void ShowAllProductsTabButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel?.ShowAllProducts();
+    }
+
+    private void ShowCriticalProductsTabButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel?.ShowCriticalProducts();
+    }
+
     private void RemoveSaleLineButton_OnClick(object sender, RoutedEventArgs e)
     {
         var vm = ViewModel;
@@ -706,6 +763,36 @@ public partial class MainWindow : Window
         });
     }
 
+    private void ShowProductMovementsDialog(ProductPreviewItem product)
+    {
+        var vm = RequireViewModel();
+
+        while (true)
+        {
+            var currentProduct = vm.GetProductById(product.ProductId) ?? product;
+            var movementsWindow = new ProductMovementsWindow(currentProduct, vm.GetProductMovements(currentProduct.ProductId)) { Owner = this };
+            movementsWindow.ShowDialog();
+
+            if (!movementsWindow.RequestCustomerReturn)
+            {
+                return;
+            }
+
+            var returnDialog = new CustomerReturnWindow(vm.GetCustomerReturnDraft(currentProduct.ProductId)) { Owner = this };
+            if (returnDialog.ShowDialog() != true)
+            {
+                continue;
+            }
+
+            vm.CreateCustomerReturn(returnDialog.ResultModel);
+            MessageBox.Show(
+                $"Возврат товара \"{currentProduct.ProductName}\" сохранён и добавлен в FIFO как новое входящее движение.",
+                "TeaShopManager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+    }
+
     private bool ConfirmDelete(string message)
     {
         return MessageBox.Show(message, "TeaShopManager", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
@@ -726,5 +813,20 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(exception.Message, "TeaShopManager", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private static T? FindVisualParent<T>(DependencyObject? child) where T : DependencyObject
+    {
+        while (child is not null)
+        {
+            if (child is T target)
+            {
+                return target;
+            }
+
+            child = VisualTreeHelper.GetParent(child);
+        }
+
+        return null;
     }
 }

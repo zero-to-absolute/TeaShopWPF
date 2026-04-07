@@ -13,6 +13,7 @@ public sealed class ShellViewModel : ViewModelBase
     private string _pageTitle = string.Empty;
     private string _currentSectionKey = string.Empty;
     private string _productSearchText = string.Empty;
+    private bool _isShowingCriticalProductsOnly;
     private string _currentOrderTitle = "Текущий заказ";
     private string _currentOrderDate = DateTime.Now.ToString("dd MMMM, HH:mm");
     private string _currentOrderTotal = "0 ₽";
@@ -100,6 +101,27 @@ public sealed class ShellViewModel : ViewModelBase
         }
     }
 
+    public bool IsShowingCriticalProductsOnly
+    {
+        get => _isShowingCriticalProductsOnly;
+        private set
+        {
+            if (!SetProperty(ref _isShowingCriticalProductsOnly, value))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(IsShowingAllProducts));
+            ApplyProductFilter();
+        }
+    }
+
+    public bool IsShowingAllProducts => !IsShowingCriticalProductsOnly;
+
+    public string ProductInventoryCaption => IsShowingCriticalProductsOnly
+        ? $"Показаны только товары ниже минимального остатка: {Products.Count} поз. Двойной щелчок открывает партии и FIFO-остатки."
+        : "Показаны все товары. Красным отмечены позиции с критическим остатком. Двойной щелчок открывает партии и FIFO-остатки.";
+
     public string CurrentOrderTitle { get => _currentOrderTitle; private set => SetProperty(ref _currentOrderTitle, value); }
     public string CurrentOrderDate { get => _currentOrderDate; private set => SetProperty(ref _currentOrderDate, value); }
     public string CurrentOrderTotal { get => _currentOrderTotal; private set => SetProperty(ref _currentOrderTotal, value); }
@@ -146,7 +168,12 @@ public sealed class ShellViewModel : ViewModelBase
     public IReadOnlyList<LookupItem> GetStatusOrderLookupItems() => _repository.GetStatusOrderLookupItems();
     public IReadOnlyList<LookupItem> GetStatusSupplyLookupItems() => _repository.GetStatusSupplyLookupItems();
     public ProductPreviewItem? GetProductById(int productId) => _allProducts.FirstOrDefault(product => product.ProductId == productId);
-    public IReadOnlyList<ProductPreviewItem> GetProductsForSale() => _allProducts.OrderBy(product => product.ProductName).ToList();
+    public IReadOnlyList<ProductMovementPreviewItem> GetProductMovements(int productId) => _repository.GetProductMovements(productId);
+    public CustomerReturnEditorModel GetCustomerReturnDraft(int productId) => _repository.GetCustomerReturnDraft(productId);
+    public IReadOnlyList<ProductPreviewItem> GetProductsForSale() => _allProducts
+        .Where(product => product.StockQuantityValue > 0)
+        .OrderBy(product => product.ProductName)
+        .ToList();
 
     public void SaveUser(UserEditorModel model) { _repository.SaveUser(model); ReplaceCollection(Users, _repository.GetUsers()); }
     public void DeleteUser(int userId) { _repository.DeleteUser(userId); ReplaceCollection(Users, _repository.GetUsers()); }
@@ -164,49 +191,71 @@ public sealed class ShellViewModel : ViewModelBase
     public void DeleteOrder(int orderId) { _repository.DeleteOrder(orderId); ReplaceCollection(Orders, _repository.GetOrders()); ReplaceCollection(OrderDetails, _repository.GetOrderDetails()); }
     public void SaveOrderDetail(OrderDetailEditorModel model) { _repository.SaveOrderDetail(model); ReplaceCollection(OrderDetails, _repository.GetOrderDetails()); ReplaceCollection(Orders, _repository.GetOrders()); }
     public void DeleteOrderDetail(int orderId, int productId) { _repository.DeleteOrderDetail(orderId, productId); ReplaceCollection(OrderDetails, _repository.GetOrderDetails()); ReplaceCollection(Orders, _repository.GetOrders()); }
-    public void SaveNotification(NotificationEditorModel model) { _repository.SaveNotification(model); ReplaceCollection(Notifications, _repository.GetNotifications()); }
-    public void DeleteNotification(int notificationId) { _repository.DeleteNotification(notificationId); ReplaceCollection(Notifications, _repository.GetNotifications()); }
-    public void SaveSupply(SupplyEditorModel model) { _repository.SaveSupply(model); ReplaceCollection(Supplies, _repository.GetSupplies()); }
-    public void DeleteSupply(int supplyId) { _repository.DeleteSupply(supplyId); ReplaceCollection(Supplies, _repository.GetSupplies()); ReplaceCollection(SupplyDetails, _repository.GetSupplyDetails()); }
-    public void SaveSupplyDetail(SupplyDetailEditorModel model) { _repository.SaveSupplyDetail(model); ReplaceCollection(SupplyDetails, _repository.GetSupplyDetails()); }
-    public void DeleteSupplyDetail(int supplyId, int productId) { _repository.DeleteSupplyDetail(supplyId, productId); ReplaceCollection(SupplyDetails, _repository.GetSupplyDetails()); }
+    public void SaveNotification(NotificationEditorModel model) { _repository.SaveNotification(model); RefreshNotificationData(); }
+    public void DeleteNotification(int notificationId) { _repository.DeleteNotification(notificationId); RefreshNotificationData(); }
+    public void MarkNotificationAsRead(int notificationId) { _repository.MarkNotificationAsRead(notificationId); RefreshNotificationData(); }
+    public void SaveSupply(SupplyEditorModel model) { _repository.SaveSupply(model); RefreshSupplyData(); RefreshInventoryData(); RefreshNotificationData(); }
+    public void DeleteSupply(int supplyId) { _repository.DeleteSupply(supplyId); RefreshSupplyData(); }
+    public void ReceiveSupply(int supplyId) { _repository.ReceiveSupply(supplyId); RefreshSupplyData(); RefreshInventoryData(); RefreshNotificationData(); }
+    public void SaveSupplyDetail(SupplyDetailEditorModel model) { _repository.SaveSupplyDetail(model); RefreshSupplyData(); }
+    public void DeleteSupplyDetail(int supplyId, int productId) { _repository.DeleteSupplyDetail(supplyId, productId); RefreshSupplyData(); }
     public void SaveLoss(LossEditorModel model) { _repository.SaveLoss(model); ReplaceCollection(Losses, _repository.GetLosses()); }
     public void DeleteLoss(int lossId) { _repository.DeleteLoss(lossId); ReplaceCollection(Losses, _repository.GetLosses()); }
 
     public void SaveProduct(ProductEditorModel model)
     {
         _repository.SaveProduct(model);
-        _allProducts = _repository.GetProducts().ToList();
-        ApplyProductFilter();
-        RebuildQuickSaleItems();
+        RefreshInventoryData();
+        RefreshNotificationData();
     }
 
     public void DeleteProduct(int productId)
     {
         _repository.DeleteProduct(productId);
-        _allProducts = _repository.GetProducts().ToList();
-        ApplyProductFilter();
-        RebuildQuickSaleItems();
+        RefreshInventoryData();
+        RefreshNotificationData();
+    }
+
+    public void CreateCustomerReturn(CustomerReturnEditorModel model)
+    {
+        _repository.CreateCustomerReturn(model, CurrentUser.UserId);
+        RefreshSupplyData();
+        RefreshInventoryData();
+        RefreshNotificationData();
     }
 
     public void AddSaleLine(ProductPreviewItem product, int quantity)
     {
+        if (quantity <= 0)
+        {
+            throw new InvalidOperationException("Количество должно быть больше нуля.");
+        }
+
         var existing = SaleLines.FirstOrDefault(line => line.ProductId == product.ProductId);
+        var requestedQuantity = quantity + (existing?.QuantityValue ?? 0);
+        if (requestedQuantity > product.StockQuantityValue)
+        {
+            var details = product.StockQuantityValue > 0
+                ? $"Доступно: {product.StockQuantityValue}."
+                : "Товара сейчас нет в наличии.";
+
+            throw new InvalidOperationException($"Недостаточно товара \"{product.ProductName}\". {details}");
+        }
+
         if (existing is not null)
         {
             SaleLines.Remove(existing);
-            quantity += existing.QuantityValue;
         }
 
         SaleLines.Add(new SaleLinePreviewItem
         {
             ProductId = product.ProductId,
             ProductName = product.ProductName,
-            QuantityValue = quantity,
-            Quantity = quantity.ToString(),
+            QuantityValue = requestedQuantity,
+            Quantity = requestedQuantity.ToString(),
             UnitPriceValue = product.PriceValue,
             Price = $"{product.PriceValue:0.##} ₽",
-            TotalAmount = $"{product.PriceValue * quantity:0.##} ₽"
+            TotalAmount = $"{product.PriceValue * requestedQuantity:0.##} ₽"
         });
 
         UpdateOrderTotal();
@@ -234,24 +283,57 @@ public sealed class ShellViewModel : ViewModelBase
 
         ReplaceCollection(Orders, _repository.GetOrders());
         ReplaceCollection(OrderDetails, _repository.GetOrderDetails());
-        _allProducts = _repository.GetProducts().ToList();
-        ApplyProductFilter();
+        RefreshInventoryData();
+        RefreshNotificationData();
         ResetSaleDraft(orderId);
         return orderId;
     }
 
+    public void ShowAllProducts() => IsShowingCriticalProductsOnly = false;
+
+    public void ShowCriticalProducts() => IsShowingCriticalProductsOnly = true;
+
     private void ApplyProductFilter()
     {
-        var filtered = string.IsNullOrWhiteSpace(ProductSearchText)
-            ? _allProducts
-            : _allProducts.Where(product =>
-                product.ProductName.Contains(ProductSearchText.Trim(), StringComparison.CurrentCultureIgnoreCase)
-                || product.CategoryName.Contains(ProductSearchText.Trim(), StringComparison.CurrentCultureIgnoreCase)).ToList();
+        IEnumerable<ProductPreviewItem> filtered = IsShowingCriticalProductsOnly
+            ? _allProducts.Where(product => product.IsCritical)
+            : _allProducts;
 
-        ReplaceCollection(Products, filtered);
+        if (!string.IsNullOrWhiteSpace(ProductSearchText))
+        {
+            var search = ProductSearchText.Trim();
+            filtered = filtered.Where(product =>
+                product.ProductName.Contains(search, StringComparison.CurrentCultureIgnoreCase)
+                || product.CategoryName.Contains(search, StringComparison.CurrentCultureIgnoreCase));
+        }
+
+        ReplaceCollection(Products, filtered.OrderBy(product => product.ProductName));
+        OnPropertyChanged(nameof(ProductInventoryCaption));
     }
 
-    private void RebuildQuickSaleItems() => ReplaceCollection(QuickSaleItems, _allProducts.OrderBy(product => product.ProductName).Take(4).Select(product => new QuickSaleItem
+    private void RefreshInventoryData()
+    {
+        _allProducts = _repository.GetProducts().ToList();
+        ApplyProductFilter();
+        RebuildQuickSaleItems();
+    }
+
+    private void RefreshSupplyData()
+    {
+        ReplaceCollection(Supplies, _repository.GetSupplies());
+        ReplaceCollection(SupplyDetails, _repository.GetSupplyDetails());
+    }
+
+    private void RefreshNotificationData()
+    {
+        ReplaceCollection(Notifications, _repository.GetNotifications());
+    }
+
+    private void RebuildQuickSaleItems() => ReplaceCollection(QuickSaleItems, _allProducts
+        .Where(product => product.StockQuantityValue > 0)
+        .OrderBy(product => product.ProductName)
+        .Take(4)
+        .Select(product => new QuickSaleItem
     {
         ProductId = product.ProductId,
         Title = product.ProductName,

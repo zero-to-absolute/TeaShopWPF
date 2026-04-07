@@ -141,6 +141,23 @@ public sealed class SupplyDetailEditorModel
     public DateTime ProductionDate { get; set; } = DateTime.Today;
 }
 
+public sealed class CustomerReturnEditorModel
+{
+    public int ProductId { get; set; }
+
+    public string ProductName { get; set; } = string.Empty;
+
+    public string CategoryName { get; set; } = string.Empty;
+
+    public DateTime ReturnDate { get; set; } = DateTime.Today;
+
+    public int Quantity { get; set; }
+
+    public decimal UnitPrice { get; set; }
+
+    public DateTime ProductionDate { get; set; } = DateTime.Today;
+}
+
 public sealed class LossEditorModel
 {
     public int LossId { get; set; }

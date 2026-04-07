@@ -6,6 +6,26 @@ namespace TeaShopManager.DataAccess;
 
 public sealed class TeaShopRepository
 {
+    private const string LowStockNotificationType = "Минимальный остаток";
+    private const string CustomerReturnSupplierName = "Возврат покупателя";
+    private const string TeaCategoryName = "Чай";
+
+    private const string AcceptedSupplyStatusCondition = """
+                                                         ss.NAME LIKE N'Принят%'
+                                                         OR ss.NAME LIKE N'Достав%'
+                                                         OR ss.NAME LIKE N'Получ%'
+                                                         OR ss.NAME LIKE N'Привез%'
+                                                         OR ss.NAME LIKE N'Заверш%'
+                                                         OR ss.NAME LIKE N'Закрыт%'
+                                                         """;
+
+    private const string CountedOrderStatusCondition = """
+                                                        so.NAME LIKE N'Оплач%'
+                                                        OR so.NAME LIKE N'Заверш%'
+                                                        OR so.NAME LIKE N'Выдан%'
+                                                        OR so.NAME LIKE N'Закрыт%'
+                                                        """;
+
     private readonly string _connectionString;
 
     public TeaShopRepository(string connectionString)
@@ -106,31 +126,37 @@ public sealed class TeaShopRepository
 
     public IReadOnlyList<ProductPreviewItem> GetProducts()
     {
-        const string sql = """
-                           SELECT
-                               p.ID_PRODUCT,
-                               p.PRODUCT_NAME,
-                               p.PRICE,
-                               p.MIN_STOCK_QUANTITY,
-                               p.DESCRIPTION,
-                               p.EXPIRATION_DATE,
-                               p.ID_CATEGORY,
-                               c.CATEGORY_NAME,
-                               COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) AS STOCK_QUANTITY
-                           FROM PRODUCTS p
-                           INNER JOIN CATEGORY c ON c.ID_CATEGORY = p.ID_CATEGORY
-                           OUTER APPLY (
-                               SELECT SUM(QUANTITY) AS TOTAL_SUPPLIED
-                               FROM SUPPLIES_DETAILS
-                               WHERE ID_PRODUCT = p.ID_PRODUCT
-                           ) sd
-                           OUTER APPLY (
-                               SELECT SUM(QUANTITY) AS TOTAL_SOLD
-                               FROM ORDER_DETAILS
-                               WHERE ID_PRODUCT = p.ID_PRODUCT
-                           ) od
-                           ORDER BY p.PRODUCT_NAME;
-                           """;
+        var sql = $"""
+                    SELECT
+                        p.ID_PRODUCT,
+                        p.PRODUCT_NAME,
+                        p.PRICE,
+                        p.MIN_STOCK_QUANTITY,
+                        p.DESCRIPTION,
+                        p.EXPIRATION_DATE,
+                        p.ID_CATEGORY,
+                        c.CATEGORY_NAME,
+                        COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) AS STOCK_QUANTITY
+                    FROM PRODUCTS p
+                    INNER JOIN CATEGORY c ON c.ID_CATEGORY = p.ID_CATEGORY
+                    OUTER APPLY (
+                        SELECT SUM(sd.QUANTITY) AS TOTAL_SUPPLIED
+                        FROM SUPPLIES_DETAILS sd
+                        INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                        INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                        WHERE sd.ID_PRODUCT = p.ID_PRODUCT
+                          AND ({AcceptedSupplyStatusCondition})
+                    ) sd
+                    OUTER APPLY (
+                        SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
+                        FROM ORDER_DETAILS od
+                        INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
+                        INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
+                        WHERE od.ID_PRODUCT = p.ID_PRODUCT
+                          AND ({CountedOrderStatusCondition})
+                    ) od
+                    ORDER BY p.PRODUCT_NAME;
+                    """;
 
         var result = new List<ProductPreviewItem>();
         using var connection = OpenConnection();
@@ -300,7 +326,7 @@ public sealed class TeaShopRepository
                                ID_USER,
                                IS_READ
                            FROM NOTIFICATIONS
-                           ORDER BY CREATED_DATE DESC;
+                           ORDER BY IS_READ, CREATED_DATE DESC;
                            """;
 
         var result = new List<NotificationPreviewItem>();
@@ -355,6 +381,8 @@ public sealed class TeaShopRepository
         while (reader.Read())
         {
             var supplyId = Convert.ToInt32(reader["ID_SUPPLIES"]);
+            var statusName = reader["STATUS_NAME"]?.ToString() ?? string.Empty;
+            var isAccepted = IsAcceptedSupplyStatusName(statusName);
             result.Add(new SupplyPreviewItem
             {
                 SupplyId = supplyId,
@@ -368,9 +396,11 @@ public sealed class TeaShopRepository
                 DeliveryDate = reader["DELIVERY_DATE"] == DBNull.Value
                     ? "-"
                     : Convert.ToDateTime(reader["DELIVERY_DATE"]).ToString("dd.MM.yyyy"),
-                StatusName = reader["STATUS_NAME"]?.ToString() ?? string.Empty,
+                StatusName = statusName,
                 SupplierName = reader["SUPPLIER_NAME"]?.ToString() ?? string.Empty,
-                UserName = reader["LOGIN"]?.ToString() ?? string.Empty
+                UserName = reader["LOGIN"]?.ToString() ?? string.Empty,
+                CanModify = !isAccepted,
+                CanReceive = !isAccepted
             });
         }
 
@@ -386,8 +416,11 @@ public sealed class TeaShopRepository
                                p.PRODUCT_NAME,
                                sd.QUANTITY,
                                sd.UNIT_PRICE,
-                               sd.PRODUCTION_DATE
+                               sd.PRODUCTION_DATE,
+                               ss.NAME AS STATUS_NAME
                            FROM SUPPLIES_DETAILS sd
+                           INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                           INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
                            INNER JOIN PRODUCTS p ON p.ID_PRODUCT = sd.ID_PRODUCT
                            ORDER BY sd.ID_SUPPLIES DESC, p.PRODUCT_NAME;
                            """;
@@ -400,6 +433,7 @@ public sealed class TeaShopRepository
         while (reader.Read())
         {
             var supplyId = Convert.ToInt32(reader["ID_SUPPLIES"]);
+            var statusName = reader["STATUS_NAME"]?.ToString() ?? string.Empty;
             result.Add(new SupplyDetailPreviewItem
             {
                 SupplyId = supplyId,
@@ -411,7 +445,8 @@ public sealed class TeaShopRepository
                 ProductName = reader["PRODUCT_NAME"]?.ToString() ?? string.Empty,
                 Quantity = Convert.ToInt32(reader["QUANTITY"]).ToString(),
                 UnitPrice = $"{Convert.ToDecimal(reader["UNIT_PRICE"]):0.##} ₽",
-                ProductionDate = Convert.ToDateTime(reader["PRODUCTION_DATE"]).ToString("dd.MM.yyyy")
+                ProductionDate = Convert.ToDateTime(reader["PRODUCTION_DATE"]).ToString("dd.MM.yyyy"),
+                CanModify = !IsAcceptedSupplyStatusName(statusName)
             });
         }
 
@@ -633,6 +668,7 @@ public sealed class TeaShopRepository
             using var command = new SqlCommand(insertSql, connection);
             FillProductParameters(command, model);
             command.ExecuteNonQuery();
+            SyncLowStockNotifications(connection);
             return;
         }
 
@@ -652,12 +688,18 @@ public sealed class TeaShopRepository
             FillProductParameters(command, model);
             command.ExecuteNonQuery();
         }
+
+        SyncLowStockNotifications(connection);
     }
 
     public void DeleteProduct(int productId)
     {
+        using var connection = OpenConnection();
         const string sql = "DELETE FROM PRODUCTS WHERE ID_PRODUCT = @productId;";
-        ExecuteDelete(sql, ("@productId", SqlDbType.Int, productId));
+        using var command = new SqlCommand(sql, connection);
+        command.Parameters.Add("@productId", SqlDbType.Int).Value = productId;
+        command.ExecuteNonQuery();
+        SyncLowStockNotifications(connection);
     }
 
     public void SaveStatusOrder(StatusEditorModel model)
@@ -830,11 +872,27 @@ public sealed class TeaShopRepository
         ExecuteDelete(sql, ("@notificationId", SqlDbType.Int, notificationId));
     }
 
+    public void MarkNotificationAsRead(int notificationId)
+    {
+        const string sql = """
+                           UPDATE NOTIFICATIONS
+                           SET IS_READ = 1
+                           WHERE ID_NOTIFICATION = @notificationId;
+                           """;
+
+        ExecuteDelete(sql, ("@notificationId", SqlDbType.Int, notificationId));
+    }
+
     public void SaveSupply(SupplyEditorModel model)
     {
         using var connection = OpenConnection();
         if (model.SupplyId == 0)
         {
+            if (IsSupplyAcceptedStatusId(connection, null, model.StatusId))
+            {
+                throw new InvalidOperationException("Нельзя создавать поставку сразу в принятом статусе. Сначала создайте поставку и добавьте её позиции.");
+            }
+
             const string insertSql = """
                                      INSERT INTO SUPPLIES (CREATION_DATE, DELIVERY_DATE, ID_STATUS, ID_SUPPLIER, ID_USER)
                                      VALUES (@creationDate, @deliveryDate, @statusId, @supplierId, @userId);
@@ -845,19 +903,49 @@ public sealed class TeaShopRepository
             return;
         }
 
-        const string updateSql = """
-                                 UPDATE SUPPLIES
-                                 SET CREATION_DATE = @creationDate,
-                                     DELIVERY_DATE = @deliveryDate,
-                                     ID_STATUS = @statusId,
-                                     ID_SUPPLIER = @supplierId,
-                                     ID_USER = @userId
-                                 WHERE ID_SUPPLIES = @supplyId;
-                                 """;
-        using var updateCommand = new SqlCommand(updateSql, connection);
-        updateCommand.Parameters.Add("@supplyId", SqlDbType.Int).Value = model.SupplyId;
-        FillSupplyParameters(updateCommand, model);
-        updateCommand.ExecuteNonQuery();
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            EnsureSupplyIsEditable(connection, transaction, model.SupplyId);
+
+            var isAcceptedStatus = IsSupplyAcceptedStatusId(connection, transaction, model.StatusId);
+            if (isAcceptedStatus)
+            {
+                EnsureSupplyHasDetails(connection, transaction, model.SupplyId);
+            }
+
+            const string updateSql = """
+                                     UPDATE SUPPLIES
+                                     SET CREATION_DATE = @creationDate,
+                                         DELIVERY_DATE = @deliveryDate,
+                                         ID_STATUS = @statusId,
+                                         ID_SUPPLIER = @supplierId,
+                                         ID_USER = @userId
+                                     WHERE ID_SUPPLIES = @supplyId;
+                                     """;
+            using var updateCommand = new SqlCommand(updateSql, connection, transaction);
+            updateCommand.Parameters.Add("@supplyId", SqlDbType.Int).Value = model.SupplyId;
+            updateCommand.Parameters.Add("@creationDate", SqlDbType.Date).Value = model.CreationDate.Date;
+            var deliveryDate = model.DeliveryDate ?? (isAcceptedStatus ? DateTime.Today : null);
+            var deliveryParameter = updateCommand.Parameters.Add("@deliveryDate", SqlDbType.Date);
+            deliveryParameter.Value = deliveryDate.HasValue ? deliveryDate.Value.Date : DBNull.Value;
+            updateCommand.Parameters.Add("@statusId", SqlDbType.Int).Value = model.StatusId;
+            updateCommand.Parameters.Add("@supplierId", SqlDbType.Int).Value = model.SupplierId;
+            updateCommand.Parameters.Add("@userId", SqlDbType.Int).Value = model.UserId;
+            updateCommand.ExecuteNonQuery();
+
+            if (isAcceptedStatus)
+            {
+                SyncLowStockNotifications(connection, transaction);
+            }
+
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     public void DeleteSupply(int supplyId)
@@ -866,6 +954,8 @@ public sealed class TeaShopRepository
         using var transaction = connection.BeginTransaction();
         try
         {
+            EnsureSupplyIsEditable(connection, transaction, supplyId);
+
             using (var detailCommand = new SqlCommand("DELETE FROM SUPPLIES_DETAILS WHERE ID_SUPPLIES = @supplyId;", connection, transaction))
             {
                 detailCommand.Parameters.Add("@supplyId", SqlDbType.Int).Value = supplyId;
@@ -896,6 +986,19 @@ public sealed class TeaShopRepository
         {
             var isNew = model.OriginalSupplyId == 0 && model.OriginalProductId == 0;
             var keysChanged = !isNew && (model.OriginalSupplyId != model.SupplyId || model.OriginalProductId != model.ProductId);
+
+            if (isNew)
+            {
+                EnsureSupplyIsEditable(connection, transaction, model.SupplyId);
+            }
+            else
+            {
+                EnsureSupplyIsEditable(connection, transaction, model.OriginalSupplyId);
+                if (keysChanged)
+                {
+                    EnsureSupplyIsEditable(connection, transaction, model.SupplyId);
+                }
+            }
 
             if (isNew || keysChanged)
             {
@@ -938,8 +1041,50 @@ public sealed class TeaShopRepository
 
     public void DeleteSupplyDetail(int supplyId, int productId)
     {
+        using var connection = OpenConnection();
+        EnsureSupplyIsEditable(connection, null, supplyId);
         const string sql = "DELETE FROM SUPPLIES_DETAILS WHERE ID_SUPPLIES = @supplyId AND ID_PRODUCT = @productId;";
-        ExecuteDelete(sql, ("@supplyId", SqlDbType.Int, supplyId), ("@productId", SqlDbType.Int, productId));
+        using var command = new SqlCommand(sql, connection);
+        command.Parameters.Add("@supplyId", SqlDbType.Int).Value = supplyId;
+        command.Parameters.Add("@productId", SqlDbType.Int).Value = productId;
+        command.ExecuteNonQuery();
+    }
+
+    public void ReceiveSupply(int supplyId)
+    {
+        using var connection = OpenConnection();
+        using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
+
+        try
+        {
+            if (IsSupplyAccepted(connection, transaction, supplyId))
+            {
+                throw new InvalidOperationException("Поставка уже принята.");
+            }
+
+            EnsureSupplyHasDetails(connection, transaction, supplyId);
+            var acceptedStatusId = GetAcceptedSupplyStatusId(connection, transaction);
+
+            const string sql = """
+                               UPDATE SUPPLIES
+                               SET ID_STATUS = @statusId,
+                                   DELIVERY_DATE = COALESCE(DELIVERY_DATE, CAST(GETDATE() AS date))
+                               WHERE ID_SUPPLIES = @supplyId;
+                               """;
+
+            using var command = new SqlCommand(sql, connection, transaction);
+            command.Parameters.Add("@statusId", SqlDbType.Int).Value = acceptedStatusId;
+            command.Parameters.Add("@supplyId", SqlDbType.Int).Value = supplyId;
+            command.ExecuteNonQuery();
+
+            SyncLowStockNotifications(connection, transaction);
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     public void SaveLoss(LossEditorModel model)
@@ -976,6 +1121,205 @@ public sealed class TeaShopRepository
         ExecuteDelete(sql, ("@lossId", SqlDbType.Int, lossId));
     }
 
+    public IReadOnlyList<ProductMovementPreviewItem> GetProductMovements(int productId)
+    {
+        var incomingSql = $"""
+                           SELECT
+                               sd.ID_SUPPLIES,
+                               sp.SUPPLIER_NAME,
+                               COALESCE(s.DELIVERY_DATE, s.CREATION_DATE) AS RECEIVED_DATE,
+                               sd.PRODUCTION_DATE,
+                               sd.UNIT_PRICE,
+                               sd.QUANTITY
+                           FROM SUPPLIES_DETAILS sd
+                           INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                           INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                           INNER JOIN SUPPLIERS sp ON sp.ID_SUPPLIER = s.ID_SUPPLIER
+                           WHERE sd.ID_PRODUCT = @productId
+                             AND ({AcceptedSupplyStatusCondition})
+                           ORDER BY COALESCE(s.DELIVERY_DATE, s.CREATION_DATE), sd.ID_SUPPLIES, sd.PRODUCTION_DATE, sd.ID_PRODUCT;
+                           """;
+
+        var result = new List<ProductMovementPreviewItem>();
+        using var connection = OpenConnection();
+        using var command = new SqlCommand(incomingSql, connection);
+        command.Parameters.Add("@productId", SqlDbType.Int).Value = productId;
+        using var reader = command.ExecuteReader();
+
+        var incomingItems = new List<(int SupplyId, string SupplierName, DateTime ReceivedDate, DateTime ProductionDate, decimal UnitPrice, int Quantity)>();
+        while (reader.Read())
+        {
+            incomingItems.Add((
+                Convert.ToInt32(reader["ID_SUPPLIES"]),
+                reader["SUPPLIER_NAME"]?.ToString() ?? string.Empty,
+                Convert.ToDateTime(reader["RECEIVED_DATE"]),
+                Convert.ToDateTime(reader["PRODUCTION_DATE"]),
+                Convert.ToDecimal(reader["UNIT_PRICE"]),
+                Convert.ToInt32(reader["QUANTITY"])));
+        }
+
+        reader.Close();
+
+        var remainingSoldQuantity = GetCountedSoldQuantity(connection, null, productId);
+        foreach (var incomingItem in incomingItems)
+        {
+            var soldQuantity = Math.Min(remainingSoldQuantity, incomingItem.Quantity);
+            remainingSoldQuantity -= soldQuantity;
+            var remainingQuantity = incomingItem.Quantity - soldQuantity;
+            var isCustomerReturn = string.Equals(
+                incomingItem.SupplierName,
+                CustomerReturnSupplierName,
+                StringComparison.CurrentCultureIgnoreCase);
+
+            result.Add(new ProductMovementPreviewItem
+            {
+                SupplyId = incomingItem.SupplyId,
+                IsCustomerReturn = isCustomerReturn,
+                ReceivedDateValue = incomingItem.ReceivedDate,
+                ProductionDateValue = incomingItem.ProductionDate,
+                UnitPriceValue = incomingItem.UnitPrice,
+                QuantityValue = incomingItem.Quantity,
+                SoldQuantityValue = soldQuantity,
+                RemainingQuantityValue = remainingQuantity,
+                MovementType = isCustomerReturn ? "Возврат" : "Поставка",
+                DocumentCode = incomingItem.SupplyId.ToString(),
+                PartnerName = incomingItem.SupplierName,
+                ReceivedDate = incomingItem.ReceivedDate.ToString("dd.MM.yyyy"),
+                ProductionDate = incomingItem.ProductionDate.ToString("dd.MM.yyyy"),
+                UnitPrice = $"{incomingItem.UnitPrice:0.##} ₽",
+                Quantity = incomingItem.Quantity.ToString(),
+                SoldQuantity = soldQuantity.ToString(),
+                RemainingQuantity = remainingQuantity.ToString()
+            });
+        }
+
+        return result;
+    }
+
+    public CustomerReturnEditorModel GetCustomerReturnDraft(int productId)
+    {
+        var sql = $"""
+                    SELECT
+                        p.ID_PRODUCT,
+                        p.PRODUCT_NAME,
+                        c.CATEGORY_NAME,
+                        p.PRICE,
+                        lastSupply.UNIT_PRICE AS LAST_UNIT_PRICE
+                    FROM PRODUCTS p
+                    INNER JOIN CATEGORY c ON c.ID_CATEGORY = p.ID_CATEGORY
+                    OUTER APPLY (
+                        SELECT TOP (1) sd.UNIT_PRICE
+                        FROM SUPPLIES_DETAILS sd
+                        INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                        INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                        WHERE sd.ID_PRODUCT = p.ID_PRODUCT
+                          AND ({AcceptedSupplyStatusCondition})
+                        ORDER BY COALESCE(s.DELIVERY_DATE, s.CREATION_DATE) DESC, sd.ID_SUPPLIES DESC
+                    ) lastSupply
+                    WHERE p.ID_PRODUCT = @productId;
+                    """;
+
+        using var connection = OpenConnection();
+        using var command = new SqlCommand(sql, connection);
+        command.Parameters.Add("@productId", SqlDbType.Int).Value = productId;
+        using var reader = command.ExecuteReader();
+
+        if (!reader.Read())
+        {
+            throw new InvalidOperationException($"Товар с идентификатором {productId} не найден.");
+        }
+
+        var suggestedUnitPrice = reader["LAST_UNIT_PRICE"] == DBNull.Value
+            ? Convert.ToDecimal(reader["PRICE"])
+            : Convert.ToDecimal(reader["LAST_UNIT_PRICE"]);
+
+        return new CustomerReturnEditorModel
+        {
+            ProductId = Convert.ToInt32(reader["ID_PRODUCT"]),
+            ProductName = reader["PRODUCT_NAME"]?.ToString() ?? string.Empty,
+            CategoryName = reader["CATEGORY_NAME"]?.ToString() ?? string.Empty,
+            ReturnDate = DateTime.Today,
+            Quantity = 1,
+            UnitPrice = suggestedUnitPrice,
+            ProductionDate = DateTime.Today
+        };
+    }
+
+    public void CreateCustomerReturn(CustomerReturnEditorModel model, int userId)
+    {
+        if (model.ProductId <= 0)
+        {
+            throw new InvalidOperationException("Не выбран товар для возврата.");
+        }
+
+        if (model.Quantity <= 0)
+        {
+            throw new InvalidOperationException("Количество возврата должно быть больше нуля.");
+        }
+
+        if (model.UnitPrice <= 0)
+        {
+            throw new InvalidOperationException("Закупочная цена возврата должна быть больше нуля.");
+        }
+
+        using var connection = OpenConnection();
+        using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
+
+        try
+        {
+            var productSnapshot = GetProductSnapshot(connection, transaction, model.ProductId);
+            if (IsTeaCategoryName(productSnapshot.CategoryName))
+            {
+                throw new InvalidOperationException("Возврат на склад для категории \"Чай\" не поддерживается.");
+            }
+
+            var supplierId = GetOrCreateCustomerReturnSupplierId(connection, transaction);
+            var statusId = GetAcceptedSupplyStatusId(connection, transaction);
+
+            const string supplySql = """
+                                     INSERT INTO SUPPLIES (CREATION_DATE, DELIVERY_DATE, ID_STATUS, ID_SUPPLIER, ID_USER)
+                                     OUTPUT INSERTED.ID_SUPPLIES
+                                     VALUES (@creationDate, @deliveryDate, @statusId, @supplierId, @userId);
+                                     """;
+
+            int supplyId;
+            using (var supplyCommand = new SqlCommand(supplySql, connection, transaction))
+            {
+                supplyCommand.Parameters.Add("@creationDate", SqlDbType.Date).Value = model.ReturnDate.Date;
+                supplyCommand.Parameters.Add("@deliveryDate", SqlDbType.Date).Value = model.ReturnDate.Date;
+                supplyCommand.Parameters.Add("@statusId", SqlDbType.Int).Value = statusId;
+                supplyCommand.Parameters.Add("@supplierId", SqlDbType.Int).Value = supplierId;
+                supplyCommand.Parameters.Add("@userId", SqlDbType.Int).Value = userId;
+                supplyId = Convert.ToInt32(supplyCommand.ExecuteScalar());
+            }
+
+            const string detailSql = """
+                                     INSERT INTO SUPPLIES_DETAILS (ID_PRODUCT, ID_SUPPLIES, QUANTITY, UNIT_PRICE, PRODUCTION_DATE)
+                                     VALUES (@productId, @supplyId, @quantity, @unitPrice, @productionDate);
+                                     """;
+
+            using (var detailCommand = new SqlCommand(detailSql, connection, transaction))
+            {
+                detailCommand.Parameters.Add("@productId", SqlDbType.Int).Value = model.ProductId;
+                detailCommand.Parameters.Add("@supplyId", SqlDbType.Int).Value = supplyId;
+                detailCommand.Parameters.Add("@quantity", SqlDbType.Int).Value = model.Quantity;
+                detailCommand.Parameters.Add("@unitPrice", SqlDbType.Decimal).Value = model.UnitPrice;
+                detailCommand.Parameters["@unitPrice"].Precision = 8;
+                detailCommand.Parameters["@unitPrice"].Scale = 2;
+                detailCommand.Parameters.Add("@productionDate", SqlDbType.Date).Value = model.ProductionDate.Date;
+                detailCommand.ExecuteNonQuery();
+            }
+
+            SyncLowStockNotifications(connection, transaction);
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
     public int CreateSale(int userId, IReadOnlyList<SaleDraftLine> lines)
     {
         if (lines.Count == 0)
@@ -984,11 +1328,32 @@ public sealed class TeaShopRepository
         }
 
         using var connection = OpenConnection();
-        using var transaction = connection.BeginTransaction();
+        using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
 
         try
         {
-            var statusId = GetOrderStatusId(connection, transaction, "Оплачен");
+            foreach (var requestedLine in lines
+                         .GroupBy(line => new { line.ProductId, line.ProductName })
+                         .Select(group => new
+                         {
+                             group.Key.ProductId,
+                             group.Key.ProductName,
+                             Quantity = group.Sum(line => line.Quantity)
+                         }))
+            {
+                var availableQuantity = GetAvailableStockQuantity(connection, transaction, requestedLine.ProductId);
+                if (requestedLine.Quantity > availableQuantity)
+                {
+                    var details = availableQuantity > 0
+                        ? $"Доступно только {availableQuantity}."
+                        : "Товара сейчас нет в наличии.";
+
+                    throw new InvalidOperationException(
+                        $"Недостаточно остатка для товара \"{requestedLine.ProductName}\". {details}");
+                }
+            }
+
+            var statusId = GetCompletedSaleStatusId(connection, transaction);
 
             const string orderSql = """
                                     INSERT INTO ORDERS (ORDER_DATE, ID_STATUS, ID_USER)
@@ -1021,6 +1386,7 @@ public sealed class TeaShopRepository
                 detailCommand.ExecuteNonQuery();
             }
 
+            SyncLowStockNotifications(connection, transaction);
             transaction.Commit();
             return orderId;
         }
@@ -1076,6 +1442,7 @@ public sealed class TeaShopRepository
     public IReadOnlyList<LookupItem> GetSupplyLookupItems()
     {
         return GetSupplies()
+            .Where(supply => supply.CanModify)
             .Select(supply => new LookupItem { Id = supply.SupplyId, Name = supply.SupplyCode })
             .ToList();
     }
@@ -1121,24 +1488,424 @@ public sealed class TeaShopRepository
         return result;
     }
 
-    private int GetOrderStatusId(SqlConnection connection, SqlTransaction transaction, string statusName)
+    private int GetCompletedSaleStatusId(SqlConnection connection, SqlTransaction transaction)
     {
         const string sql = """
                            SELECT TOP (1) ID_STATUS
                            FROM STATUS_ORDER
-                           WHERE NAME = @name;
+                           WHERE NAME LIKE N'Оплач%'
+                              OR NAME LIKE N'Заверш%'
+                              OR NAME LIKE N'Выдан%'
+                              OR NAME LIKE N'Закрыт%'
+                           ORDER BY CASE
+                               WHEN NAME LIKE N'Оплач%' THEN 0
+                               WHEN NAME LIKE N'Заверш%' THEN 1
+                               WHEN NAME LIKE N'Выдан%' THEN 2
+                               ELSE 3
+                           END,
+                           ID_STATUS;
                            """;
 
         using var command = new SqlCommand(sql, connection, transaction);
-        command.Parameters.Add("@name", SqlDbType.VarChar, 50).Value = statusName;
         var result = command.ExecuteScalar();
 
         if (result is null)
         {
-            throw new InvalidOperationException($"В STATUS_ORDER не найден статус '{statusName}'.");
+            throw new InvalidOperationException("В STATUS_ORDER не найден статус для завершённой продажи. Нужен статус вроде \"Оплачен\" или \"Завершён\".");
         }
 
         return Convert.ToInt32(result);
+    }
+
+    private int GetAcceptedSupplyStatusId(SqlConnection connection, SqlTransaction transaction)
+    {
+        const string sql = """
+                           SELECT TOP (1) ID_STATUS
+                           FROM STATUS_SUPPLIES
+                           WHERE NAME LIKE N'Принят%'
+                              OR NAME LIKE N'Достав%'
+                              OR NAME LIKE N'Получ%'
+                              OR NAME LIKE N'Привез%'
+                              OR NAME LIKE N'Заверш%'
+                              OR NAME LIKE N'Закрыт%'
+                           ORDER BY CASE
+                               WHEN NAME LIKE N'Принят%' THEN 0
+                               WHEN NAME LIKE N'Достав%' THEN 1
+                               WHEN NAME LIKE N'Получ%' THEN 2
+                               WHEN NAME LIKE N'Привез%' THEN 3
+                               WHEN NAME LIKE N'Заверш%' THEN 4
+                               ELSE 5
+                           END,
+                           ID_STATUS;
+                           """;
+
+        using var command = new SqlCommand(sql, connection, transaction);
+        var result = command.ExecuteScalar();
+        if (result is not null)
+        {
+            return Convert.ToInt32(result);
+        }
+
+        const string insertSql = """
+                                 INSERT INTO STATUS_SUPPLIES (NAME)
+                                 OUTPUT INSERTED.ID_STATUS
+                                 VALUES (N'Принята');
+                                 """;
+
+        using var insertCommand = new SqlCommand(insertSql, connection, transaction);
+        return Convert.ToInt32(insertCommand.ExecuteScalar());
+    }
+
+    private int GetAvailableStockQuantity(SqlConnection connection, SqlTransaction transaction, int productId)
+    {
+        var sql = $"""
+                    SELECT
+                        COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) AS STOCK_QUANTITY
+                    FROM PRODUCTS p
+                    OUTER APPLY (
+                        SELECT SUM(sd.QUANTITY) AS TOTAL_SUPPLIED
+                        FROM SUPPLIES_DETAILS sd
+                        INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                        INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                        WHERE sd.ID_PRODUCT = p.ID_PRODUCT
+                          AND ({AcceptedSupplyStatusCondition})
+                    ) sd
+                    OUTER APPLY (
+                        SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
+                        FROM ORDER_DETAILS od
+                        INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
+                        INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
+                        WHERE od.ID_PRODUCT = p.ID_PRODUCT
+                          AND ({CountedOrderStatusCondition})
+                    ) od
+                    WHERE p.ID_PRODUCT = @productId;
+                    """;
+
+        using var command = new SqlCommand(sql, connection, transaction);
+        command.Parameters.Add("@productId", SqlDbType.Int).Value = productId;
+
+        var result = command.ExecuteScalar();
+        if (result is null || result == DBNull.Value)
+        {
+            throw new InvalidOperationException($"Товар с идентификатором {productId} не найден.");
+        }
+
+        return Convert.ToInt32(result);
+    }
+
+    private int GetCountedSoldQuantity(SqlConnection connection, SqlTransaction? transaction, int productId)
+    {
+        var sql = $"""
+                    SELECT COALESCE(SUM(od.QUANTITY), 0)
+                    FROM ORDER_DETAILS od
+                    INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
+                    INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
+                    WHERE od.ID_PRODUCT = @productId
+                      AND ({CountedOrderStatusCondition});
+                    """;
+
+        using var command = transaction is null
+            ? new SqlCommand(sql, connection)
+            : new SqlCommand(sql, connection, transaction);
+        command.Parameters.Add("@productId", SqlDbType.Int).Value = productId;
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    private void SyncLowStockNotifications(SqlConnection connection, SqlTransaction? transaction = null)
+    {
+        var recipients = GetInventoryNotificationRecipients(connection, transaction);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        var criticalProducts = GetCriticalProducts(connection, transaction);
+        var existing = GetExistingLowStockNotifications(connection, transaction);
+
+        foreach (var userId in recipients)
+        {
+            using var deleteCommand = transaction is null
+                ? new SqlCommand("DELETE FROM NOTIFICATIONS WHERE NOTIFICATION_TYPE = @type AND ID_USER = @userId;", connection)
+                : new SqlCommand("DELETE FROM NOTIFICATIONS WHERE NOTIFICATION_TYPE = @type AND ID_USER = @userId;", connection, transaction);
+            deleteCommand.Parameters.Add("@type", SqlDbType.VarChar, 50).Value = LowStockNotificationType;
+            deleteCommand.Parameters.Add("@userId", SqlDbType.Int).Value = userId;
+            deleteCommand.ExecuteNonQuery();
+
+            foreach (var product in criticalProducts)
+            {
+                var key = (userId, product.ProductId);
+                var hasExisting = existing.TryGetValue(key, out var snapshot);
+                var createdAt = hasExisting ? snapshot.CreatedAt : DateTime.Now;
+                var isRead = hasExisting && snapshot.IsRead;
+
+                using var insertCommand = transaction is null
+                    ? new SqlCommand("""
+                                     INSERT INTO NOTIFICATIONS (NOTIFICATION_TYPE, MESSAGE, CREATED_DATE, ID_PRODUCT, ID_USER, IS_READ)
+                                     VALUES (@type, @message, @createdDate, @productId, @userId, @isRead);
+                                     """, connection)
+                    : new SqlCommand("""
+                                     INSERT INTO NOTIFICATIONS (NOTIFICATION_TYPE, MESSAGE, CREATED_DATE, ID_PRODUCT, ID_USER, IS_READ)
+                                     VALUES (@type, @message, @createdDate, @productId, @userId, @isRead);
+                                     """, connection, transaction);
+
+                insertCommand.Parameters.Add("@type", SqlDbType.VarChar, 50).Value = LowStockNotificationType;
+                insertCommand.Parameters.Add("@message", SqlDbType.VarChar, -1).Value =
+                    $"Товар \"{product.ProductName}\" ниже минимального остатка. Остаток: {product.StockQuantity}, минимум: {product.MinStockQuantity}.";
+                insertCommand.Parameters.Add("@createdDate", SqlDbType.DateTime).Value = createdAt;
+                insertCommand.Parameters.Add("@productId", SqlDbType.Int).Value = product.ProductId;
+                insertCommand.Parameters.Add("@userId", SqlDbType.Int).Value = userId;
+                insertCommand.Parameters.Add("@isRead", SqlDbType.Bit).Value = isRead;
+                insertCommand.ExecuteNonQuery();
+            }
+        }
+    }
+
+    private Dictionary<(int UserId, int ProductId), (bool IsRead, DateTime CreatedAt)> GetExistingLowStockNotifications(SqlConnection connection, SqlTransaction? transaction)
+    {
+        const string sql = """
+                           SELECT ID_USER, ID_PRODUCT, IS_READ, CREATED_DATE
+                           FROM NOTIFICATIONS
+                           WHERE NOTIFICATION_TYPE = @type;
+                           """;
+
+        using var command = transaction is null
+            ? new SqlCommand(sql, connection)
+            : new SqlCommand(sql, connection, transaction);
+        command.Parameters.Add("@type", SqlDbType.VarChar, 50).Value = LowStockNotificationType;
+
+        using var reader = command.ExecuteReader();
+        var result = new Dictionary<(int UserId, int ProductId), (bool IsRead, DateTime CreatedAt)>();
+        while (reader.Read())
+        {
+            result[(Convert.ToInt32(reader["ID_USER"]), Convert.ToInt32(reader["ID_PRODUCT"]))] =
+                (Convert.ToBoolean(reader["IS_READ"]), Convert.ToDateTime(reader["CREATED_DATE"]));
+        }
+
+        return result;
+    }
+
+    private IReadOnlyList<int> GetInventoryNotificationRecipients(SqlConnection connection, SqlTransaction? transaction)
+    {
+        const string sql = """
+                           SELECT u.ID_USER
+                           FROM USERS u
+                           INNER JOIN ROLE r ON r.ID_ROLE = u.ID_ROLE
+                           WHERE r.ROLE_NAME LIKE N'%менедж%'
+                              OR r.ROLE_NAME LIKE N'%администратор%';
+                           """;
+
+        using var command = transaction is null
+            ? new SqlCommand(sql, connection)
+            : new SqlCommand(sql, connection, transaction);
+        using var reader = command.ExecuteReader();
+
+        var result = new List<int>();
+        while (reader.Read())
+        {
+            result.Add(Convert.ToInt32(reader["ID_USER"]));
+        }
+
+        return result;
+    }
+
+    private IReadOnlyList<(int ProductId, string ProductName, int StockQuantity, int MinStockQuantity)> GetCriticalProducts(SqlConnection connection, SqlTransaction? transaction)
+    {
+        var sql = $"""
+                    SELECT
+                        p.ID_PRODUCT,
+                        p.PRODUCT_NAME,
+                        p.MIN_STOCK_QUANTITY,
+                        COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) AS STOCK_QUANTITY
+                    FROM PRODUCTS p
+                    OUTER APPLY (
+                        SELECT SUM(sd.QUANTITY) AS TOTAL_SUPPLIED
+                        FROM SUPPLIES_DETAILS sd
+                        INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                        INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                        WHERE sd.ID_PRODUCT = p.ID_PRODUCT
+                          AND ({AcceptedSupplyStatusCondition})
+                    ) sd
+                    OUTER APPLY (
+                        SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
+                        FROM ORDER_DETAILS od
+                        INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
+                        INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
+                        WHERE od.ID_PRODUCT = p.ID_PRODUCT
+                          AND ({CountedOrderStatusCondition})
+                    ) od
+                    WHERE COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) < p.MIN_STOCK_QUANTITY
+                    ORDER BY p.PRODUCT_NAME;
+                    """;
+
+        using var command = transaction is null
+            ? new SqlCommand(sql, connection)
+            : new SqlCommand(sql, connection, transaction);
+        using var reader = command.ExecuteReader();
+
+        var result = new List<(int ProductId, string ProductName, int StockQuantity, int MinStockQuantity)>();
+        while (reader.Read())
+        {
+            result.Add((
+                Convert.ToInt32(reader["ID_PRODUCT"]),
+                reader["PRODUCT_NAME"]?.ToString() ?? string.Empty,
+                Convert.ToInt32(reader["STOCK_QUANTITY"]),
+                Convert.ToInt32(reader["MIN_STOCK_QUANTITY"])));
+        }
+
+        return result;
+    }
+
+    private void EnsureSupplyHasDetails(SqlConnection connection, SqlTransaction? transaction, int supplyId)
+    {
+        const string sql = """
+                           SELECT COUNT(*)
+                           FROM SUPPLIES_DETAILS
+                           WHERE ID_SUPPLIES = @supplyId;
+                           """;
+
+        using var command = transaction is null
+            ? new SqlCommand(sql, connection)
+            : new SqlCommand(sql, connection, transaction);
+        command.Parameters.Add("@supplyId", SqlDbType.Int).Value = supplyId;
+
+        if (Convert.ToInt32(command.ExecuteScalar()) == 0)
+        {
+            throw new InvalidOperationException("Нельзя принять поставку без позиций.");
+        }
+    }
+
+    private (string ProductName, string CategoryName, decimal RetailPrice) GetProductSnapshot(SqlConnection connection, SqlTransaction? transaction, int productId)
+    {
+        const string sql = """
+                           SELECT
+                               p.PRODUCT_NAME,
+                               c.CATEGORY_NAME,
+                               p.PRICE
+                           FROM PRODUCTS p
+                           INNER JOIN CATEGORY c ON c.ID_CATEGORY = p.ID_CATEGORY
+                           WHERE p.ID_PRODUCT = @productId;
+                           """;
+
+        using var command = transaction is null
+            ? new SqlCommand(sql, connection)
+            : new SqlCommand(sql, connection, transaction);
+        command.Parameters.Add("@productId", SqlDbType.Int).Value = productId;
+        using var reader = command.ExecuteReader();
+
+        if (!reader.Read())
+        {
+            throw new InvalidOperationException($"Товар с идентификатором {productId} не найден.");
+        }
+
+        return (
+            reader["PRODUCT_NAME"]?.ToString() ?? string.Empty,
+            reader["CATEGORY_NAME"]?.ToString() ?? string.Empty,
+            Convert.ToDecimal(reader["PRICE"]));
+    }
+
+    private int GetOrCreateCustomerReturnSupplierId(SqlConnection connection, SqlTransaction transaction)
+    {
+        const string selectSql = """
+                                 SELECT TOP (1) ID_SUPPLIER
+                                 FROM SUPPLIERS
+                                 WHERE SUPPLIER_NAME = @name
+                                 ORDER BY ID_SUPPLIER;
+                                 """;
+
+        using (var selectCommand = new SqlCommand(selectSql, connection, transaction))
+        {
+            selectCommand.Parameters.Add("@name", SqlDbType.VarChar, 4000).Value = CustomerReturnSupplierName;
+            var existing = selectCommand.ExecuteScalar();
+            if (existing is not null)
+            {
+                return Convert.ToInt32(existing);
+            }
+        }
+
+        const string insertSql = """
+                                 INSERT INTO SUPPLIERS (SUPPLIER_NAME, CONTACT_PERSON, PHONE, EMAIL, ADDRESS)
+                                 OUTPUT INSERTED.ID_SUPPLIER
+                                 VALUES (@name, @contactPerson, @phone, @email, @address);
+                                 """;
+
+        using var insertCommand = new SqlCommand(insertSql, connection, transaction);
+        insertCommand.Parameters.Add("@name", SqlDbType.VarChar, 4000).Value = CustomerReturnSupplierName;
+        insertCommand.Parameters.Add("@contactPerson", SqlDbType.VarChar, 4000).Value = "Покупатель";
+        insertCommand.Parameters.Add("@phone", SqlDbType.VarChar, 20).Value = "-";
+        insertCommand.Parameters.Add("@email", SqlDbType.VarChar, 100).Value = DBNull.Value;
+        insertCommand.Parameters.Add("@address", SqlDbType.VarChar, 4000).Value = "Возврат через приложение";
+        return Convert.ToInt32(insertCommand.ExecuteScalar());
+    }
+
+    private void EnsureSupplyIsEditable(SqlConnection connection, SqlTransaction? transaction, int supplyId)
+    {
+        if (IsSupplyAccepted(connection, transaction, supplyId))
+        {
+            throw new InvalidOperationException("Принятая поставка больше не редактируется. Для неё доступны только просмотр и учет в остатках.");
+        }
+    }
+
+    private bool IsSupplyAccepted(SqlConnection connection, SqlTransaction? transaction, int supplyId)
+    {
+        const string sql = """
+                           SELECT TOP (1) ss.NAME
+                           FROM SUPPLIES s
+                           INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                           WHERE s.ID_SUPPLIES = @supplyId;
+                           """;
+
+        using var command = transaction is null
+            ? new SqlCommand(sql, connection)
+            : new SqlCommand(sql, connection, transaction);
+        command.Parameters.Add("@supplyId", SqlDbType.Int).Value = supplyId;
+        var result = command.ExecuteScalar();
+        if (result is null)
+        {
+            throw new InvalidOperationException($"Поставка {supplyId} не найдена.");
+        }
+
+        return IsAcceptedSupplyStatusName(result.ToString());
+    }
+
+    private bool IsSupplyAcceptedStatusId(SqlConnection connection, SqlTransaction? transaction, int statusId)
+    {
+        const string sql = """
+                           SELECT TOP (1) NAME
+                           FROM STATUS_SUPPLIES
+                           WHERE ID_STATUS = @statusId;
+                           """;
+
+        using var command = transaction is null
+            ? new SqlCommand(sql, connection)
+            : new SqlCommand(sql, connection, transaction);
+        command.Parameters.Add("@statusId", SqlDbType.Int).Value = statusId;
+        var result = command.ExecuteScalar();
+        if (result is null)
+        {
+            throw new InvalidOperationException($"Статус поставки {statusId} не найден.");
+        }
+
+        return IsAcceptedSupplyStatusName(result.ToString());
+    }
+
+    private static bool IsAcceptedSupplyStatusName(string? statusName)
+    {
+        if (string.IsNullOrWhiteSpace(statusName))
+        {
+            return false;
+        }
+
+        return statusName.StartsWith("Принят", StringComparison.CurrentCultureIgnoreCase)
+               || statusName.StartsWith("Достав", StringComparison.CurrentCultureIgnoreCase)
+               || statusName.StartsWith("Получ", StringComparison.CurrentCultureIgnoreCase)
+               || statusName.StartsWith("Привез", StringComparison.CurrentCultureIgnoreCase)
+               || statusName.StartsWith("Заверш", StringComparison.CurrentCultureIgnoreCase)
+               || statusName.StartsWith("Закрыт", StringComparison.CurrentCultureIgnoreCase);
+    }
+
+    private static bool IsTeaCategoryName(string? categoryName)
+    {
+        return string.Equals(categoryName?.Trim(), TeaCategoryName, StringComparison.CurrentCultureIgnoreCase);
     }
 
     private void FillProductParameters(SqlCommand command, ProductEditorModel model)

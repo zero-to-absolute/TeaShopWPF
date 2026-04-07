@@ -1,0 +1,92 @@
+<Window x:Class="TeaShopManager.Views.ProductMovementsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Партии товара"
+        Width="1180"
+        Height="760"
+        MinWidth="980"
+        MinHeight="620"
+        WindowStartupLocation="CenterOwner">
+    <Border Margin="18"
+            Style="{StaticResource CardBorderStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionTitleTextStyle}"
+                               FontSize="24"
+                               Text="{Binding WindowTitle}" />
+                    <TextBlock Margin="0,8,0,0"
+                               Style="{StaticResource BodyTextStyle}"
+                               Text="{Binding ProductCaption}" />
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Width="180"
+                        Margin="18,0,0,0"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="Оформить возврат"
+                        Visibility="{Binding CanCreateReturn, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Click="CreateReturnButton_OnClick" />
+            </Grid>
+
+            <Border Grid.Row="1"
+                    Margin="0,18,0,0"
+                    Padding="14"
+                    CornerRadius="12"
+                    Background="{StaticResource PanelBrush}">
+                <TextBlock Style="{StaticResource BodyTextStyle}"
+                           TextWrapping="Wrap"
+                           Text="{Binding FifoCaption}" />
+            </Border>
+
+            <DataGrid Grid.Row="2"
+                      Margin="0,18,0,0"
+                      Style="{StaticResource ShellDataGridStyle}"
+                      ItemsSource="{Binding MovementItems}"
+                      IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Тип" Binding="{Binding MovementType}" Width="120" />
+                    <DataGridTextColumn Header="Код документа" Binding="{Binding DocumentCode}" Width="120" />
+                    <DataGridTextColumn Header="Поставщик / источник" Binding="{Binding PartnerName}" Width="220" />
+                    <DataGridTextColumn Header="Дата приёмки" Binding="{Binding ReceivedDate}" Width="140" />
+                    <DataGridTextColumn Header="Дата производства" Binding="{Binding ProductionDate}" Width="150" />
+                    <DataGridTextColumn Header="Закупочная цена" Binding="{Binding UnitPrice}" Width="140" />
+                    <DataGridTextColumn Header="Было в партии" Binding="{Binding Quantity}" Width="130" />
+                    <DataGridTextColumn Header="Продано" Binding="{Binding SoldQuantity}" Width="120" />
+                    <DataGridTextColumn Header="Осталось" Binding="{Binding RemainingQuantity}" Width="120" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <Grid Grid.Row="3"
+                  Margin="0,22,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock VerticalAlignment="Center"
+                           Style="{StaticResource BodyTextStyle}"
+                           Text="{Binding ReturnPolicyCaption}" />
+
+                <Button Grid.Column="1"
+                        Width="130"
+                        Margin="18,0,0,0"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Content="Закрыть"
+                        Click="CloseButton_OnClick" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

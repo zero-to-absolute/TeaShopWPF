@@ -1,0 +1,89 @@
+<Window x:Class="TeaShopManager.Views.CustomerReturnWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="620"
+        Height="620"
+        MinWidth="560"
+        MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        SizeToContent="WidthAndHeight">
+    <Border Margin="18"
+            Style="{StaticResource CardBorderStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Style="{StaticResource SectionTitleTextStyle}"
+                       FontSize="24"
+                       Text="Возврат от покупателя" />
+
+            <ScrollViewer Grid.Row="1"
+                          Margin="0,22,0,0"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Border Padding="14"
+                            CornerRadius="12"
+                            Background="{StaticResource PanelBrush}">
+                        <TextBlock Style="{StaticResource BodyTextStyle}"
+                                   TextWrapping="Wrap"
+                                   Text="Возврат для непродовольственного товара будет сохранён как отдельное входящее движение и попадёт в FIFO по дате возврата." />
+                    </Border>
+
+                    <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Товар" />
+                    <TextBox Margin="0,10,0,0"
+                             Style="{StaticResource InputTextBoxStyle}"
+                             IsReadOnly="True"
+                             Text="{Binding ResultModel.ProductName}" />
+
+                    <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Категория" />
+                    <TextBox Margin="0,10,0,0"
+                             Style="{StaticResource InputTextBoxStyle}"
+                             IsReadOnly="True"
+                             Text="{Binding ResultModel.CategoryName}" />
+
+                    <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Дата возврата" />
+                    <DatePicker x:Name="ReturnDatePicker"
+                                Margin="0,10,0,0"
+                                SelectedDateFormat="Short" />
+
+                    <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Количество" />
+                    <TextBox x:Name="QuantityTextBox"
+                             Margin="0,10,0,0"
+                             Style="{StaticResource InputTextBoxStyle}" />
+
+                    <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Закупочная цена партии" />
+                    <TextBox x:Name="UnitPriceTextBox"
+                             Margin="0,10,0,0"
+                             Style="{StaticResource InputTextBoxStyle}" />
+
+                    <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Дата производства" />
+                    <DatePicker x:Name="ProductionDatePicker"
+                                Margin="0,10,0,0"
+                                SelectedDateFormat="Short" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <Grid Grid.Row="2"
+                  Margin="0,24,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Button Margin="0,0,10,0"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="Отмена"
+                        Click="CancelButton_OnClick" />
+                <Button Grid.Column="1"
+                        Margin="10,0,0,0"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Content="Сохранить возврат"
+                        Click="SaveButton_OnClick" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

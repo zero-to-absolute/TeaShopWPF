@@ -69,6 +69,52 @@ public sealed class ProductPreviewItem
     public bool IsCritical { get; init; }
 }
 
+public sealed class ProductMovementPreviewItem
+{
+    public int SupplyId { get; init; }
+
+    public bool IsCustomerReturn { get; init; }
+
+    public DateTime ReceivedDateValue { get; init; }
+
+    public DateTime ProductionDateValue { get; init; }
+
+    public decimal UnitPriceValue { get; init; }
+
+    public int QuantityValue { get; init; }
+
+    public int SoldQuantityValue { get; init; }
+
+    public int RemainingQuantityValue { get; init; }
+
+    [Display(Name = "Тип")]
+    public string MovementType { get; init; } = string.Empty;
+
+    [Display(Name = "Код документа")]
+    public string DocumentCode { get; init; } = string.Empty;
+
+    [Display(Name = "Поставщик / источник")]
+    public string PartnerName { get; init; } = string.Empty;
+
+    [Display(Name = "Дата приёмки")]
+    public string ReceivedDate { get; init; } = string.Empty;
+
+    [Display(Name = "Дата производства")]
+    public string ProductionDate { get; init; } = string.Empty;
+
+    [Display(Name = "Закупочная цена")]
+    public string UnitPrice { get; init; } = string.Empty;
+
+    [Display(Name = "Было в партии")]
+    public string Quantity { get; init; } = string.Empty;
+
+    [Display(Name = "Продано")]
+    public string SoldQuantity { get; init; } = string.Empty;
+
+    [Display(Name = "Осталось")]
+    public string RemainingQuantity { get; init; } = string.Empty;
+}
+
 public sealed class SupplierPreviewItem
 {
     public int SupplierId { get; init; }
@@ -191,6 +237,8 @@ public sealed class NotificationPreviewItem
 
     [Display(Name = "Прочитано")]
     public string ReadState { get; init; } = string.Empty;
+
+    public bool CanMarkAsRead => !IsRead;
 }
 
 public sealed class SupplyPreviewItem
@@ -224,6 +272,12 @@ public sealed class SupplyPreviewItem
 
     [Display(Name = "Пользователь")]
     public string UserName { get; init; } = string.Empty;
+
+    public bool CanModify { get; init; }
+
+    public bool CanReceive { get; init; }
+
+    public string ReceiveActionText => CanReceive ? "Принять" : "Принята";
 }
 
 public sealed class SupplyDetailPreviewItem
@@ -252,6 +306,8 @@ public sealed class SupplyDetailPreviewItem
 
     [Display(Name = "Дата производства")]
     public string ProductionDate { get; init; } = string.Empty;
+
+    public bool CanModify { get; init; }
 }
 
 public sealed class LossPreviewItem
