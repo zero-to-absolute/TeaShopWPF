@@ -15,17 +15,18 @@ public sealed class AuthenticationRepository
 
     public UserSession? Authenticate(string login, string password)
     {
-        const string sql = """
-                           SELECT TOP (1)
-                               u.ID_USER,
-                               u.LOGIN,
-                               u.PASSWORD,
-                               u.FULL_NAME,
-                               r.ROLE_NAME
-                           FROM USERS u
-                           INNER JOIN ROLE r ON r.ID_ROLE = u.ID_ROLE
-                           WHERE u.LOGIN = @login;
-                           """;
+        const string sql =
+            """
+            SELECT TOP (1)
+                u.ID_USER,
+                u.LOGIN,
+                u.PASSWORD,
+                u.FULL_NAME,
+                r.ROLE_NAME
+            FROM USERS u
+            INNER JOIN ROLE r ON r.ID_ROLE = u.ID_ROLE
+            WHERE u.LOGIN = @login;
+            """;
 
         using var connection = new SqlConnection(_connectionString);
         using var command = new SqlCommand(sql, connection);

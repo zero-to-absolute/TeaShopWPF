@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Microsoft.Data.SqlClient;
 using TeaShopManager.Models;
 
@@ -13,21 +13,23 @@ public sealed partial class TeaShopRepository
     private bool _lossQuantityColumnChecked;
     private const string ExpirationNotificationType = "Срок годности";
 
-    private const string AcceptedSupplyStatusCondition = """
-                                                         ss.NAME LIKE N'Принят%'
-                                                         OR ss.NAME LIKE N'Достав%'
-                                                         OR ss.NAME LIKE N'Получ%'
-                                                         OR ss.NAME LIKE N'Привез%'
-                                                         OR ss.NAME LIKE N'Заверш%'
-                                                         OR ss.NAME LIKE N'Закрыт%'
-                                                         """;
+    private const string AcceptedSupplyStatusCondition =
+        """
+        ss.NAME LIKE N'Принят%'
+        OR ss.NAME LIKE N'Достав%'
+        OR ss.NAME LIKE N'Получ%'
+        OR ss.NAME LIKE N'Привез%'
+        OR ss.NAME LIKE N'Заверш%'
+        OR ss.NAME LIKE N'Закрыт%'
+        """;
 
-    private const string CountedOrderStatusCondition = """
-                                                        so.NAME LIKE N'Оплач%'
-                                                        OR so.NAME LIKE N'Заверш%'
-                                                        OR so.NAME LIKE N'Выдан%'
-                                                        OR so.NAME LIKE N'Закрыт%'
-                                                        """;
+    private const string CountedOrderStatusCondition =
+        """
+         so.NAME LIKE N'Оплач%'
+         OR so.NAME LIKE N'Заверш%'
+         OR so.NAME LIKE N'Выдан%'
+         OR so.NAME LIKE N'Закрыт%'
+        """;
 
     private readonly string _connectionString;
     private readonly ApplicationSettingsStore _settingsStore;
@@ -87,11 +89,12 @@ public sealed partial class TeaShopRepository
 
     private IReadOnlyList<StatusPreviewItem> GetStatuses(string tableName)
     {
-        var sql = $"""
-                    SELECT ID_STATUS, NAME
-                    FROM {tableName}
-                    ORDER BY ID_STATUS;
-                    """;
+        var sql =
+            $"""
+            SELECT ID_STATUS, NAME
+            FROM {tableName}
+            ORDER BY ID_STATUS;
+            """;
 
         var result = new List<StatusPreviewItem>();
         using var connection = OpenConnection();
@@ -114,21 +117,22 @@ public sealed partial class TeaShopRepository
 
     private int GetCompletedSaleStatusId(SqlConnection connection, SqlTransaction transaction)
     {
-        const string sql = """
-                           SELECT TOP (1) ID_STATUS
-                           FROM STATUS_ORDER
-                           WHERE NAME LIKE N'Оплач%'
-                              OR NAME LIKE N'Заверш%'
-                              OR NAME LIKE N'Выдан%'
-                              OR NAME LIKE N'Закрыт%'
-                           ORDER BY CASE
-                               WHEN NAME LIKE N'Оплач%' THEN 0
-                               WHEN NAME LIKE N'Заверш%' THEN 1
-                               WHEN NAME LIKE N'Выдан%' THEN 2
-                               ELSE 3
-                           END,
-                           ID_STATUS;
-                           """;
+        const string sql =
+            """
+            SELECT TOP (1) ID_STATUS
+            FROM STATUS_ORDER
+            WHERE NAME LIKE N'Оплач%'
+               OR NAME LIKE N'Заверш%'
+               OR NAME LIKE N'Выдан%'
+               OR NAME LIKE N'Закрыт%'
+            ORDER BY CASE
+                WHEN NAME LIKE N'Оплач%' THEN 0
+                WHEN NAME LIKE N'Заверш%' THEN 1
+                WHEN NAME LIKE N'Выдан%' THEN 2
+                ELSE 3
+            END,
+            ID_STATUS;
+            """;
 
         using var command = new SqlCommand(sql, connection, transaction);
         var result = command.ExecuteScalar();
@@ -143,25 +147,26 @@ public sealed partial class TeaShopRepository
 
     private int GetAcceptedSupplyStatusId(SqlConnection connection, SqlTransaction transaction)
     {
-        const string sql = """
-                           SELECT TOP (1) ID_STATUS
-                           FROM STATUS_SUPPLIES
-                           WHERE NAME LIKE N'Принят%'
-                              OR NAME LIKE N'Достав%'
-                              OR NAME LIKE N'Получ%'
-                              OR NAME LIKE N'Привез%'
-                              OR NAME LIKE N'Заверш%'
-                              OR NAME LIKE N'Закрыт%'
-                           ORDER BY CASE
-                               WHEN NAME LIKE N'Принят%' THEN 0
-                               WHEN NAME LIKE N'Достав%' THEN 1
-                               WHEN NAME LIKE N'Получ%' THEN 2
-                               WHEN NAME LIKE N'Привез%' THEN 3
-                               WHEN NAME LIKE N'Заверш%' THEN 4
-                               ELSE 5
-                           END,
-                           ID_STATUS;
-                           """;
+        const string sql =
+            """
+            SELECT TOP (1) ID_STATUS
+            FROM STATUS_SUPPLIES
+            WHERE NAME LIKE N'Принят%'
+               OR NAME LIKE N'Достав%'
+               OR NAME LIKE N'Получ%'
+               OR NAME LIKE N'Привез%'
+               OR NAME LIKE N'Заверш%'
+               OR NAME LIKE N'Закрыт%'
+            ORDER BY CASE
+                WHEN NAME LIKE N'Принят%' THEN 0
+                WHEN NAME LIKE N'Достав%' THEN 1
+                WHEN NAME LIKE N'Получ%' THEN 2
+                WHEN NAME LIKE N'Привез%' THEN 3
+                WHEN NAME LIKE N'Заверш%' THEN 4
+                ELSE 5
+            END,
+            ID_STATUS;
+            """;
 
         using var command = new SqlCommand(sql, connection, transaction);
         var result = command.ExecuteScalar();
@@ -170,11 +175,12 @@ public sealed partial class TeaShopRepository
             return Convert.ToInt32(result);
         }
 
-        const string insertSql = """
-                                 INSERT INTO STATUS_SUPPLIES (NAME)
-                                 OUTPUT INSERTED.ID_STATUS
-                                 VALUES (N'Принята');
-                                 """;
+        const string insertSql =
+            """
+            INSERT INTO STATUS_SUPPLIES (NAME)
+            OUTPUT INSERTED.ID_STATUS
+            VALUES (N'Принята');
+            """;
 
         using var insertCommand = new SqlCommand(insertSql, connection, transaction);
         return Convert.ToInt32(insertCommand.ExecuteScalar());
@@ -183,33 +189,34 @@ public sealed partial class TeaShopRepository
     private int GetAvailableStockQuantity(SqlConnection connection, SqlTransaction transaction, int productId)
     {
         EnsureLossQuantityColumn(connection, transaction);
-        var sql = $"""
-                    SELECT
-                        COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) - COALESCE(ls.TOTAL_LOST, 0) AS STOCK_QUANTITY
-                    FROM PRODUCTS p
-                    OUTER APPLY (
-                        SELECT SUM(sd.QUANTITY) AS TOTAL_SUPPLIED
-                        FROM SUPPLIES_DETAILS sd
-                        INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
-                        INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
-                        WHERE sd.ID_PRODUCT = p.ID_PRODUCT
-                          AND ({AcceptedSupplyStatusCondition})
-                    ) sd
-                    OUTER APPLY (
-                        SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
-                        FROM ORDER_DETAILS od
-                        INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
-                        INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
-                        WHERE od.ID_PRODUCT = p.ID_PRODUCT
-                          AND ({CountedOrderStatusCondition})
-                    ) od
-                    OUTER APPLY (
-                        SELECT SUM(l.QUANTITY) AS TOTAL_LOST
-                        FROM LOSSES l
-                        WHERE l.ID_PRODUCT = p.ID_PRODUCT
-                    ) ls
-                    WHERE p.ID_PRODUCT = @productId;
-                    """;
+        var sql =
+            $"""
+            SELECT
+                COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) - COALESCE(ls.TOTAL_LOST, 0) AS STOCK_QUANTITY
+            FROM PRODUCTS p
+            OUTER APPLY (
+                SELECT SUM(sd.QUANTITY) AS TOTAL_SUPPLIED
+                FROM SUPPLIES_DETAILS sd
+                INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                WHERE sd.ID_PRODUCT = p.ID_PRODUCT
+                  AND ({AcceptedSupplyStatusCondition})
+            ) sd
+            OUTER APPLY (
+                SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
+                FROM ORDER_DETAILS od
+                INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
+                INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
+                WHERE od.ID_PRODUCT = p.ID_PRODUCT
+                  AND ({CountedOrderStatusCondition})
+            ) od
+            OUTER APPLY (
+                SELECT SUM(l.QUANTITY) AS TOTAL_LOST
+                FROM LOSSES l
+                WHERE l.ID_PRODUCT = p.ID_PRODUCT
+            ) ls
+            WHERE p.ID_PRODUCT = @productId;
+            """;
 
         using var command = new SqlCommand(sql, connection, transaction);
         command.Parameters.Add("@productId", SqlDbType.Int).Value = productId;
@@ -225,14 +232,15 @@ public sealed partial class TeaShopRepository
 
     private int GetCountedSoldQuantity(SqlConnection connection, SqlTransaction? transaction, int productId)
     {
-        var sql = $"""
-                    SELECT COALESCE(SUM(od.QUANTITY), 0)
-                    FROM ORDER_DETAILS od
-                    INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
-                    INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
-                    WHERE od.ID_PRODUCT = @productId
-                      AND ({CountedOrderStatusCondition});
-                    """;
+        var sql =
+            $"""
+            SELECT COALESCE(SUM(od.QUANTITY), 0)
+            FROM ORDER_DETAILS od
+            INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
+            INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
+            WHERE od.ID_PRODUCT = @productId
+              AND ({CountedOrderStatusCondition});
+            """;
 
         using var command = transaction is null
             ? new SqlCommand(sql, connection)
@@ -244,11 +252,12 @@ public sealed partial class TeaShopRepository
     private int GetCountedLossQuantity(SqlConnection connection, SqlTransaction? transaction, int productId)
     {
         EnsureLossQuantityColumn(connection, transaction);
-        const string sql = """
-                           SELECT COALESCE(SUM(l.QUANTITY), 0)
-                           FROM LOSSES l
-                           WHERE l.ID_PRODUCT = @productId;
-                           """;
+        const string sql =
+            """
+            SELECT COALESCE(SUM(l.QUANTITY), 0)
+            FROM LOSSES l
+            WHERE l.ID_PRODUCT = @productId;
+            """;
 
         using var command = transaction is null
             ? new SqlCommand(sql, connection)
@@ -285,14 +294,16 @@ public sealed partial class TeaShopRepository
                 var isRead = hasExisting && snapshot is not null && snapshot.IsRead;
 
                 using var insertCommand = transaction is null
-                    ? new SqlCommand("""
-                                     INSERT INTO NOTIFICATIONS (NOTIFICATION_TYPE, MESSAGE, CREATED_DATE, ID_PRODUCT, ID_USER, IS_READ)
-                                     VALUES (@type, @message, @createdDate, @productId, @userId, @isRead);
-                                     """, connection)
-                    : new SqlCommand("""
-                                     INSERT INTO NOTIFICATIONS (NOTIFICATION_TYPE, MESSAGE, CREATED_DATE, ID_PRODUCT, ID_USER, IS_READ)
-                                     VALUES (@type, @message, @createdDate, @productId, @userId, @isRead);
-                                     """, connection, transaction);
+                    ? new SqlCommand(
+                        """
+                        INSERT INTO NOTIFICATIONS (NOTIFICATION_TYPE, MESSAGE, CREATED_DATE, ID_PRODUCT, ID_USER, IS_READ)
+                        VALUES (@type, @message, @createdDate, @productId, @userId, @isRead);
+                        """, connection)
+                    : new SqlCommand(
+                        """
+                        INSERT INTO NOTIFICATIONS (NOTIFICATION_TYPE, MESSAGE, CREATED_DATE, ID_PRODUCT, ID_USER, IS_READ)
+                        VALUES (@type, @message, @createdDate, @productId, @userId, @isRead);
+                        """, connection, transaction);
 
                 insertCommand.Parameters.Add("@type", SqlDbType.VarChar, 50).Value = LowStockNotificationType;
                 insertCommand.Parameters.Add("@message", SqlDbType.VarChar, -1).Value =
@@ -335,14 +346,16 @@ public sealed partial class TeaShopRepository
                              && string.Equals(snapshot.Message, message, StringComparison.Ordinal);
 
                 using var insertCommand = transaction is null
-                    ? new SqlCommand("""
-                                     INSERT INTO NOTIFICATIONS (NOTIFICATION_TYPE, MESSAGE, CREATED_DATE, ID_PRODUCT, ID_USER, IS_READ)
-                                     VALUES (@type, @message, @createdDate, @productId, @userId, @isRead);
-                                     """, connection)
-                    : new SqlCommand("""
-                                     INSERT INTO NOTIFICATIONS (NOTIFICATION_TYPE, MESSAGE, CREATED_DATE, ID_PRODUCT, ID_USER, IS_READ)
-                                     VALUES (@type, @message, @createdDate, @productId, @userId, @isRead);
-                                     """, connection, transaction);
+                    ? new SqlCommand(
+                        """
+                        INSERT INTO NOTIFICATIONS (NOTIFICATION_TYPE, MESSAGE, CREATED_DATE, ID_PRODUCT, ID_USER, IS_READ)
+                        VALUES (@type, @message, @createdDate, @productId, @userId, @isRead);
+                        """, connection)
+                    : new SqlCommand(
+                        """
+                        INSERT INTO NOTIFICATIONS (NOTIFICATION_TYPE, MESSAGE, CREATED_DATE, ID_PRODUCT, ID_USER, IS_READ)
+                        VALUES (@type, @message, @createdDate, @productId, @userId, @isRead);
+                        """, connection, transaction);
 
                 insertCommand.Parameters.Add("@type", SqlDbType.VarChar, 50).Value = ExpirationNotificationType;
                 insertCommand.Parameters.Add("@message", SqlDbType.VarChar, -1).Value = message;
@@ -360,11 +373,12 @@ public sealed partial class TeaShopRepository
         SqlTransaction? transaction,
         string notificationType)
     {
-        const string sql = """
-                           SELECT ID_USER, ID_PRODUCT, IS_READ, CREATED_DATE, MESSAGE
-                           FROM NOTIFICATIONS
-                           WHERE NOTIFICATION_TYPE = @type;
-                           """;
+        const string sql =
+            """
+            SELECT ID_USER, ID_PRODUCT, IS_READ, CREATED_DATE, MESSAGE
+            FROM NOTIFICATIONS
+            WHERE NOTIFICATION_TYPE = @type;
+            """;
 
         using var command = transaction is null
             ? new SqlCommand(sql, connection)
@@ -389,22 +403,23 @@ public sealed partial class TeaShopRepository
     {
         warningDays = Math.Clamp(warningDays, 1, 90);
 
-        var incomingSql = $"""
-                           SELECT
-                               sd.ID_PRODUCT,
-                               p.PRODUCT_NAME,
-                               p.EXPIRATION_DATE,
-                               sd.PRODUCTION_DATE,
-                               sd.QUANTITY,
-                               COALESCE(s.DELIVERY_DATE, s.CREATION_DATE) AS RECEIVED_DATE,
-                               sd.ID_SUPPLIES
-                           FROM SUPPLIES_DETAILS sd
-                           INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
-                           INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
-                           INNER JOIN PRODUCTS p ON p.ID_PRODUCT = sd.ID_PRODUCT
-                           WHERE ({AcceptedSupplyStatusCondition})
-                           ORDER BY sd.ID_PRODUCT, COALESCE(s.DELIVERY_DATE, s.CREATION_DATE), sd.ID_SUPPLIES, sd.PRODUCTION_DATE;
-                           """;
+        var incomingSql =
+            $"""
+            SELECT
+                sd.ID_PRODUCT,
+                p.PRODUCT_NAME,
+                p.EXPIRATION_DATE,
+                sd.PRODUCTION_DATE,
+                sd.QUANTITY,
+                COALESCE(s.DELIVERY_DATE, s.CREATION_DATE) AS RECEIVED_DATE,
+                sd.ID_SUPPLIES
+            FROM SUPPLIES_DETAILS sd
+            INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+            INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+            INNER JOIN PRODUCTS p ON p.ID_PRODUCT = sd.ID_PRODUCT
+            WHERE ({AcceptedSupplyStatusCondition})
+            ORDER BY sd.ID_PRODUCT, COALESCE(s.DELIVERY_DATE, s.CREATION_DATE), sd.ID_SUPPLIES, sd.PRODUCTION_DATE;
+            """;
 
         var incomingBatches = new List<(int ProductId, string ProductName, int ExpirationDays, DateTime ProductionDate, int Quantity)>();
         using (var command = transaction is null
@@ -480,25 +495,26 @@ public sealed partial class TeaShopRepository
     private Dictionary<int, int> GetCountedConsumptionByProduct(SqlConnection connection, SqlTransaction? transaction)
     {
         EnsureLossQuantityColumn(connection, transaction);
-        var sql = $"""
-                    SELECT
-                        p.ID_PRODUCT,
-                        COALESCE(od.TOTAL_SOLD, 0) + COALESCE(ls.TOTAL_LOST, 0) AS TOTAL_CONSUMED
-                    FROM PRODUCTS p
-                    OUTER APPLY (
-                        SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
-                        FROM ORDER_DETAILS od
-                        INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
-                        INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
-                        WHERE od.ID_PRODUCT = p.ID_PRODUCT
-                          AND ({CountedOrderStatusCondition})
-                    ) od
-                    OUTER APPLY (
-                        SELECT SUM(l.QUANTITY) AS TOTAL_LOST
-                        FROM LOSSES l
-                        WHERE l.ID_PRODUCT = p.ID_PRODUCT
-                    ) ls;
-                    """;
+        var sql =
+            $"""
+            SELECT
+                p.ID_PRODUCT,
+                COALESCE(od.TOTAL_SOLD, 0) + COALESCE(ls.TOTAL_LOST, 0) AS TOTAL_CONSUMED
+            FROM PRODUCTS p
+            OUTER APPLY (
+                SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
+                FROM ORDER_DETAILS od
+                INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
+                INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
+                WHERE od.ID_PRODUCT = p.ID_PRODUCT
+                  AND ({CountedOrderStatusCondition})
+            ) od
+            OUTER APPLY (
+                SELECT SUM(l.QUANTITY) AS TOTAL_LOST
+                FROM LOSSES l
+                WHERE l.ID_PRODUCT = p.ID_PRODUCT
+            ) ls;
+            """;
 
         using var command = transaction is null
             ? new SqlCommand(sql, connection)
@@ -532,13 +548,14 @@ public sealed partial class TeaShopRepository
 
     private IReadOnlyList<int> GetInventoryNotificationRecipients(SqlConnection connection, SqlTransaction? transaction)
     {
-        const string sql = """
-                           SELECT u.ID_USER
-                           FROM USERS u
-                           INNER JOIN ROLE r ON r.ID_ROLE = u.ID_ROLE
-                           WHERE r.ROLE_NAME LIKE N'%менедж%'
-                              OR r.ROLE_NAME LIKE N'%администратор%';
-                           """;
+        const string sql =
+            """
+            SELECT u.ID_USER
+            FROM USERS u
+            INNER JOIN ROLE r ON r.ID_ROLE = u.ID_ROLE
+            WHERE r.ROLE_NAME LIKE N'%менедж%'
+               OR r.ROLE_NAME LIKE N'%администратор%';
+            """;
 
         using var command = transaction is null
             ? new SqlCommand(sql, connection)
@@ -557,37 +574,38 @@ public sealed partial class TeaShopRepository
     private IReadOnlyList<(int ProductId, string ProductName, int StockQuantity, int MinStockQuantity)> GetCriticalProducts(SqlConnection connection, SqlTransaction? transaction)
     {
         EnsureLossQuantityColumn(connection, transaction);
-        var sql = $"""
-                    SELECT
-                        p.ID_PRODUCT,
-                        p.PRODUCT_NAME,
-                        p.MIN_STOCK_QUANTITY,
-                        COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) - COALESCE(ls.TOTAL_LOST, 0) AS STOCK_QUANTITY
-                    FROM PRODUCTS p
-                    OUTER APPLY (
-                        SELECT SUM(sd.QUANTITY) AS TOTAL_SUPPLIED
-                        FROM SUPPLIES_DETAILS sd
-                        INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
-                        INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
-                        WHERE sd.ID_PRODUCT = p.ID_PRODUCT
-                          AND ({AcceptedSupplyStatusCondition})
-                    ) sd
-                    OUTER APPLY (
-                        SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
-                        FROM ORDER_DETAILS od
-                        INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
-                        INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
-                        WHERE od.ID_PRODUCT = p.ID_PRODUCT
-                          AND ({CountedOrderStatusCondition})
-                    ) od
-                    OUTER APPLY (
-                        SELECT SUM(l.QUANTITY) AS TOTAL_LOST
-                        FROM LOSSES l
-                        WHERE l.ID_PRODUCT = p.ID_PRODUCT
-                    ) ls
-                    WHERE COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) - COALESCE(ls.TOTAL_LOST, 0) < p.MIN_STOCK_QUANTITY
-                    ORDER BY p.PRODUCT_NAME;
-                    """;
+        var sql =
+            $"""
+            SELECT
+                p.ID_PRODUCT,
+                p.PRODUCT_NAME,
+                p.MIN_STOCK_QUANTITY,
+                COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) - COALESCE(ls.TOTAL_LOST, 0) AS STOCK_QUANTITY
+            FROM PRODUCTS p
+            OUTER APPLY (
+                SELECT SUM(sd.QUANTITY) AS TOTAL_SUPPLIED
+                FROM SUPPLIES_DETAILS sd
+                INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                WHERE sd.ID_PRODUCT = p.ID_PRODUCT
+                  AND ({AcceptedSupplyStatusCondition})
+            ) sd
+            OUTER APPLY (
+                SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
+                FROM ORDER_DETAILS od
+                INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
+                INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
+                WHERE od.ID_PRODUCT = p.ID_PRODUCT
+                  AND ({CountedOrderStatusCondition})
+            ) od
+            OUTER APPLY (
+                SELECT SUM(l.QUANTITY) AS TOTAL_LOST
+                FROM LOSSES l
+                WHERE l.ID_PRODUCT = p.ID_PRODUCT
+            ) ls
+            WHERE COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) - COALESCE(ls.TOTAL_LOST, 0) < p.MIN_STOCK_QUANTITY
+            ORDER BY p.PRODUCT_NAME;
+            """;
 
         using var command = transaction is null
             ? new SqlCommand(sql, connection)
@@ -609,11 +627,12 @@ public sealed partial class TeaShopRepository
 
     private void EnsureSupplyHasDetails(SqlConnection connection, SqlTransaction? transaction, int supplyId)
     {
-        const string sql = """
-                           SELECT COUNT(*)
-                           FROM SUPPLIES_DETAILS
-                           WHERE ID_SUPPLIES = @supplyId;
-                           """;
+        const string sql =
+            """
+            SELECT COUNT(*)
+            FROM SUPPLIES_DETAILS
+            WHERE ID_SUPPLIES = @supplyId;
+            """;
 
         using var command = transaction is null
             ? new SqlCommand(sql, connection)
@@ -628,15 +647,16 @@ public sealed partial class TeaShopRepository
 
     private (string ProductName, string CategoryName, decimal RetailPrice) GetProductSnapshot(SqlConnection connection, SqlTransaction? transaction, int productId)
     {
-        const string sql = """
-                           SELECT
-                               p.PRODUCT_NAME,
-                               c.CATEGORY_NAME,
-                               p.PRICE
-                           FROM PRODUCTS p
-                           INNER JOIN CATEGORY c ON c.ID_CATEGORY = p.ID_CATEGORY
-                           WHERE p.ID_PRODUCT = @productId;
-                           """;
+        const string sql =
+            """
+            SELECT
+                p.PRODUCT_NAME,
+                c.CATEGORY_NAME,
+                p.PRICE
+            FROM PRODUCTS p
+            INNER JOIN CATEGORY c ON c.ID_CATEGORY = p.ID_CATEGORY
+            WHERE p.ID_PRODUCT = @productId;
+            """;
 
         using var command = transaction is null
             ? new SqlCommand(sql, connection)
@@ -657,12 +677,13 @@ public sealed partial class TeaShopRepository
 
     private int GetOrCreateCustomerReturnSupplierId(SqlConnection connection, SqlTransaction transaction)
     {
-        const string selectSql = """
-                                 SELECT TOP (1) ID_SUPPLIER
-                                 FROM SUPPLIERS
-                                 WHERE SUPPLIER_NAME = @name
-                                 ORDER BY ID_SUPPLIER;
-                                 """;
+        const string selectSql =
+            """
+            SELECT TOP (1) ID_SUPPLIER
+            FROM SUPPLIERS
+            WHERE SUPPLIER_NAME = @name
+            ORDER BY ID_SUPPLIER;
+            """;
 
         using (var selectCommand = new SqlCommand(selectSql, connection, transaction))
         {
@@ -674,11 +695,12 @@ public sealed partial class TeaShopRepository
             }
         }
 
-        const string insertSql = """
-                                 INSERT INTO SUPPLIERS (SUPPLIER_NAME, CONTACT_PERSON, PHONE, EMAIL, ADDRESS)
-                                 OUTPUT INSERTED.ID_SUPPLIER
-                                 VALUES (@name, @contactPerson, @phone, @email, @address);
-                                 """;
+        const string insertSql =
+            """
+            INSERT INTO SUPPLIERS (SUPPLIER_NAME, CONTACT_PERSON, PHONE, EMAIL, ADDRESS)
+            OUTPUT INSERTED.ID_SUPPLIER
+            VALUES (@name, @contactPerson, @phone, @email, @address);
+            """;
 
         using var insertCommand = new SqlCommand(insertSql, connection, transaction);
         insertCommand.Parameters.Add("@name", SqlDbType.VarChar, 4000).Value = CustomerReturnSupplierName;
@@ -699,12 +721,13 @@ public sealed partial class TeaShopRepository
 
     private bool IsSupplyAccepted(SqlConnection connection, SqlTransaction? transaction, int supplyId)
     {
-        const string sql = """
-                           SELECT TOP (1) ss.NAME
-                           FROM SUPPLIES s
-                           INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
-                           WHERE s.ID_SUPPLIES = @supplyId;
-                           """;
+        const string sql =
+            """
+            SELECT TOP (1) ss.NAME
+            FROM SUPPLIES s
+            INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+            WHERE s.ID_SUPPLIES = @supplyId;
+            """;
 
         using var command = transaction is null
             ? new SqlCommand(sql, connection)
@@ -721,11 +744,12 @@ public sealed partial class TeaShopRepository
 
     private bool IsSupplyAcceptedStatusId(SqlConnection connection, SqlTransaction? transaction, int statusId)
     {
-        const string sql = """
-                           SELECT TOP (1) NAME
-                           FROM STATUS_SUPPLIES
-                           WHERE ID_STATUS = @statusId;
-                           """;
+        const string sql =
+            """
+            SELECT TOP (1) NAME
+            FROM STATUS_SUPPLIES
+            WHERE ID_STATUS = @statusId;
+            """;
 
         using var command = transaction is null
             ? new SqlCommand(sql, connection)
@@ -843,16 +867,18 @@ public sealed partial class TeaShopRepository
             if (columnLength is null or DBNull)
             {
                 using var alterCommand = transaction is null
-                    ? new SqlCommand("""
-                                     ALTER TABLE dbo.LOSSES
-                                     ADD QUANTITY INT NOT NULL
-                                         CONSTRAINT DF_LOSSES_QUANTITY DEFAULT (1) WITH VALUES;
-                                     """, connection)
-                    : new SqlCommand("""
-                                     ALTER TABLE dbo.LOSSES
-                                     ADD QUANTITY INT NOT NULL
-                                         CONSTRAINT DF_LOSSES_QUANTITY DEFAULT (1) WITH VALUES;
-                                     """, connection, transaction);
+                    ? new SqlCommand(
+                        """
+                        ALTER TABLE dbo.LOSSES
+                        ADD QUANTITY INT NOT NULL
+                            CONSTRAINT DF_LOSSES_QUANTITY DEFAULT (1) WITH VALUES;
+                        """, connection)
+                    : new SqlCommand(
+                        """
+                        ALTER TABLE dbo.LOSSES
+                        ADD QUANTITY INT NOT NULL
+                            CONSTRAINT DF_LOSSES_QUANTITY DEFAULT (1) WITH VALUES;
+                        """, connection, transaction);
                 alterCommand.ExecuteNonQuery();
             }
 
@@ -865,21 +891,23 @@ public sealed partial class TeaShopRepository
         using var connection = OpenConnection();
         if (model.StatusId == 0)
         {
-            var insertSql = $"""
-                             INSERT INTO {tableName} (NAME)
-                             VALUES (@name);
-                             """;
+            var insertSql =
+                $"""
+                INSERT INTO {tableName} (NAME)
+                VALUES (@name);
+                """;
             using var command = new SqlCommand(insertSql, connection);
             command.Parameters.Add("@name", SqlDbType.VarChar, 50).Value = model.StatusName.Trim();
             command.ExecuteNonQuery();
             return;
         }
 
-        var updateSql = $"""
-                         UPDATE {tableName}
-                         SET NAME = @name
-                         WHERE ID_STATUS = @statusId;
-                         """;
+        var updateSql =
+            $"""
+            UPDATE {tableName}
+            SET NAME = @name
+            WHERE ID_STATUS = @statusId;
+            """;
         using var updateCommand = new SqlCommand(updateSql, connection);
         updateCommand.Parameters.Add("@statusId", SqlDbType.Int).Value = model.StatusId;
         updateCommand.Parameters.Add("@name", SqlDbType.VarChar, 50).Value = model.StatusName.Trim();
@@ -888,10 +916,11 @@ public sealed partial class TeaShopRepository
 
     private void DeleteStatus(string tableName, int statusId)
     {
-        var sql = $"""
-                    DELETE FROM {tableName}
-                    WHERE ID_STATUS = @statusId;
-                    """;
+        var sql =
+            $"""
+            DELETE FROM {tableName}
+            WHERE ID_STATUS = @statusId;
+            """;
         ExecuteDelete(sql, ("@statusId", SqlDbType.Int, statusId));
     }
 

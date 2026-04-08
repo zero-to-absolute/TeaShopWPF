@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Microsoft.Data.SqlClient;
 using TeaShopManager.Models;
 
@@ -8,17 +8,18 @@ public sealed partial class TeaShopRepository
 {
     public IReadOnlyList<UserPreviewItem> GetUsers()
     {
-        const string sql = """
-                           SELECT
-                               u.ID_USER,
-                               u.LOGIN,
-                               u.FULL_NAME,
-                               u.ID_ROLE,
-                               r.ROLE_NAME
-                           FROM USERS u
-                           INNER JOIN ROLE r ON r.ID_ROLE = u.ID_ROLE
-                           ORDER BY u.LOGIN;
-                           """;
+        const string sql =
+            """
+            SELECT
+                u.ID_USER,
+                u.LOGIN,
+                u.FULL_NAME,
+                u.ID_ROLE,
+                r.ROLE_NAME
+            FROM USERS u
+            INNER JOIN ROLE r ON r.ID_ROLE = u.ID_ROLE
+            ORDER BY u.LOGIN;
+            """;
 
         var result = new List<UserPreviewItem>();
         using var connection = OpenConnection();
@@ -43,11 +44,12 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<RolePreviewItem> GetRoles()
     {
-        const string sql = """
-                           SELECT ID_ROLE, ROLE_NAME
-                           FROM ROLE
-                           ORDER BY ID_ROLE;
-                           """;
+        const string sql =
+            """
+            SELECT ID_ROLE, ROLE_NAME
+            FROM ROLE
+            ORDER BY ID_ROLE;
+            """;
 
         var result = new List<RolePreviewItem>();
         using var connection = OpenConnection();
@@ -70,11 +72,12 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<CategoryPreviewItem> GetCategories()
     {
-        const string sql = """
-                           SELECT ID_CATEGORY, CATEGORY_NAME
-                           FROM CATEGORY
-                           ORDER BY CATEGORY_NAME;
-                           """;
+        const string sql =
+            """
+            SELECT ID_CATEGORY, CATEGORY_NAME
+            FROM CATEGORY
+            ORDER BY CATEGORY_NAME;
+            """;
 
         var result = new List<CategoryPreviewItem>();
         using var connection = OpenConnection();
@@ -97,42 +100,43 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<ProductPreviewItem> GetProducts()
     {
-        var sql = $"""
-                    SELECT
-                        p.ID_PRODUCT,
-                        p.PRODUCT_NAME,
-                        p.PRICE,
-                        p.MIN_STOCK_QUANTITY,
-                        p.DESCRIPTION,
-                        p.EXPIRATION_DATE,
-                        p.ID_CATEGORY,
-                        c.CATEGORY_NAME,
-                        COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) - COALESCE(ls.TOTAL_LOST, 0) AS STOCK_QUANTITY
-                    FROM PRODUCTS p
-                    INNER JOIN CATEGORY c ON c.ID_CATEGORY = p.ID_CATEGORY
-                    OUTER APPLY (
-                        SELECT SUM(sd.QUANTITY) AS TOTAL_SUPPLIED
-                        FROM SUPPLIES_DETAILS sd
-                        INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
-                        INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
-                        WHERE sd.ID_PRODUCT = p.ID_PRODUCT
-                          AND ({AcceptedSupplyStatusCondition})
-                    ) sd
-                    OUTER APPLY (
-                        SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
-                        FROM ORDER_DETAILS od
-                        INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
-                        INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
-                        WHERE od.ID_PRODUCT = p.ID_PRODUCT
-                          AND ({CountedOrderStatusCondition})
-                    ) od
-                    OUTER APPLY (
-                        SELECT SUM(l.QUANTITY) AS TOTAL_LOST
-                        FROM LOSSES l
-                        WHERE l.ID_PRODUCT = p.ID_PRODUCT
-                    ) ls
-                    ORDER BY p.PRODUCT_NAME;
-                    """;
+        var sql =
+            $"""
+            SELECT
+                p.ID_PRODUCT,
+                p.PRODUCT_NAME,
+                p.PRICE,
+                p.MIN_STOCK_QUANTITY,
+                p.DESCRIPTION,
+                p.EXPIRATION_DATE,
+                p.ID_CATEGORY,
+                c.CATEGORY_NAME,
+                COALESCE(sd.TOTAL_SUPPLIED, 0) - COALESCE(od.TOTAL_SOLD, 0) - COALESCE(ls.TOTAL_LOST, 0) AS STOCK_QUANTITY
+            FROM PRODUCTS p
+            INNER JOIN CATEGORY c ON c.ID_CATEGORY = p.ID_CATEGORY
+            OUTER APPLY (
+                SELECT SUM(sd.QUANTITY) AS TOTAL_SUPPLIED
+                FROM SUPPLIES_DETAILS sd
+                INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                WHERE sd.ID_PRODUCT = p.ID_PRODUCT
+                  AND ({AcceptedSupplyStatusCondition})
+            ) sd
+            OUTER APPLY (
+                SELECT SUM(od.QUANTITY) AS TOTAL_SOLD
+                FROM ORDER_DETAILS od
+                INNER JOIN ORDERS o ON o.ID_ORDER = od.ID_ORDER
+                INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
+                WHERE od.ID_PRODUCT = p.ID_PRODUCT
+                  AND ({CountedOrderStatusCondition})
+            ) od
+            OUTER APPLY (
+                SELECT SUM(l.QUANTITY) AS TOTAL_LOST
+                FROM LOSSES l
+                WHERE l.ID_PRODUCT = p.ID_PRODUCT
+            ) ls
+            ORDER BY p.PRODUCT_NAME;
+            """;
 
         var result = new List<ProductPreviewItem>();
         using var connection = OpenConnection();
@@ -168,17 +172,18 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<SupplierPreviewItem> GetSuppliers()
     {
-        const string sql = """
-                           SELECT
-                               ID_SUPPLIER,
-                               SUPPLIER_NAME,
-                               CONTACT_PERSON,
-                               PHONE,
-                               EMAIL,
-                               ADDRESS
-                           FROM SUPPLIERS
-                           ORDER BY SUPPLIER_NAME;
-                           """;
+        const string sql =
+            """
+            SELECT
+                ID_SUPPLIER,
+                SUPPLIER_NAME,
+                CONTACT_PERSON,
+                PHONE,
+                EMAIL,
+                ADDRESS
+            FROM SUPPLIERS
+            ORDER BY SUPPLIER_NAME;
+            """;
 
         var result = new List<SupplierPreviewItem>();
         using var connection = OpenConnection();
@@ -213,20 +218,21 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<OrderPreviewItem> GetOrders()
     {
-        const string sql = """
-                           SELECT
-                               o.ID_ORDER,
-                               o.ORDER_DATE,
-                               o.ID_STATUS,
-                               o.ID_USER,
-                               so.NAME AS STATUS_NAME,
-                               COALESCE(SUM(od.QUANTITY * od.PRICE), 0) AS TOTAL_AMOUNT
-                           FROM ORDERS o
-                           INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
-                           LEFT JOIN ORDER_DETAILS od ON od.ID_ORDER = o.ID_ORDER
-                           GROUP BY o.ID_ORDER, o.ORDER_DATE, o.ID_STATUS, o.ID_USER, so.NAME
-                           ORDER BY o.ID_ORDER DESC;
-                           """;
+        const string sql =
+            """
+            SELECT
+                o.ID_ORDER,
+                o.ORDER_DATE,
+                o.ID_STATUS,
+                o.ID_USER,
+                so.NAME AS STATUS_NAME,
+                COALESCE(SUM(od.QUANTITY * od.PRICE), 0) AS TOTAL_AMOUNT
+            FROM ORDERS o
+            INNER JOIN STATUS_ORDER so ON so.ID_STATUS = o.ID_STATUS
+            LEFT JOIN ORDER_DETAILS od ON od.ID_ORDER = o.ID_ORDER
+            GROUP BY o.ID_ORDER, o.ORDER_DATE, o.ID_STATUS, o.ID_USER, so.NAME
+            ORDER BY o.ID_ORDER DESC;
+            """;
 
         var result = new List<OrderPreviewItem>();
         using var connection = OpenConnection();
@@ -255,17 +261,18 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<OrderDetailPreviewItem> GetOrderDetails()
     {
-        const string sql = """
-                           SELECT
-                               od.ID_ORDER,
-                               od.ID_PRODUCT,
-                               p.PRODUCT_NAME,
-                               od.QUANTITY,
-                               od.PRICE
-                           FROM ORDER_DETAILS od
-                           INNER JOIN PRODUCTS p ON p.ID_PRODUCT = od.ID_PRODUCT
-                           ORDER BY od.ID_ORDER DESC, p.PRODUCT_NAME;
-                           """;
+        const string sql =
+            """
+            SELECT
+                od.ID_ORDER,
+                od.ID_PRODUCT,
+                p.PRODUCT_NAME,
+                od.QUANTITY,
+                od.PRICE
+            FROM ORDER_DETAILS od
+            INNER JOIN PRODUCTS p ON p.ID_PRODUCT = od.ID_PRODUCT
+            ORDER BY od.ID_ORDER DESC, p.PRODUCT_NAME;
+            """;
 
         var result = new List<OrderDetailPreviewItem>();
         using var connection = OpenConnection();
@@ -293,18 +300,19 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<NotificationPreviewItem> GetNotifications()
     {
-        const string sql = """
-                           SELECT
-                               ID_NOTIFICATION,
-                               NOTIFICATION_TYPE,
-                               MESSAGE,
-                               CREATED_DATE,
-                               ID_PRODUCT,
-                               ID_USER,
-                               IS_READ
-                           FROM NOTIFICATIONS
-                           ORDER BY IS_READ, CREATED_DATE DESC;
-                           """;
+        const string sql =
+            """
+            SELECT
+                ID_NOTIFICATION,
+                NOTIFICATION_TYPE,
+                MESSAGE,
+                CREATED_DATE,
+                ID_PRODUCT,
+                ID_USER,
+                IS_READ
+            FROM NOTIFICATIONS
+            ORDER BY IS_READ, CREATED_DATE DESC;
+            """;
 
         var result = new List<NotificationPreviewItem>();
         using var connection = OpenConnection();
@@ -332,23 +340,24 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<SupplyPreviewItem> GetSupplies()
     {
-        const string sql = """
-                           SELECT
-                               s.ID_SUPPLIES,
-                               s.CREATION_DATE,
-                               s.DELIVERY_DATE,
-                               s.ID_STATUS,
-                               s.ID_SUPPLIER,
-                               s.ID_USER,
-                               ss.NAME AS STATUS_NAME,
-                               sp.SUPPLIER_NAME,
-                               u.LOGIN
-                           FROM SUPPLIES s
-                           INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
-                           INNER JOIN SUPPLIERS sp ON sp.ID_SUPPLIER = s.ID_SUPPLIER
-                           INNER JOIN USERS u ON u.ID_USER = s.ID_USER
-                           ORDER BY s.ID_SUPPLIES DESC;
-                           """;
+        const string sql =
+            """
+            SELECT
+                s.ID_SUPPLIES,
+                s.CREATION_DATE,
+                s.DELIVERY_DATE,
+                s.ID_STATUS,
+                s.ID_SUPPLIER,
+                s.ID_USER,
+                ss.NAME AS STATUS_NAME,
+                sp.SUPPLIER_NAME,
+                u.LOGIN
+            FROM SUPPLIES s
+            INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+            INNER JOIN SUPPLIERS sp ON sp.ID_SUPPLIER = s.ID_SUPPLIER
+            INNER JOIN USERS u ON u.ID_USER = s.ID_USER
+            ORDER BY s.ID_SUPPLIES DESC;
+            """;
 
         var result = new List<SupplyPreviewItem>();
         using var connection = OpenConnection();
@@ -386,21 +395,22 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<SupplyDetailPreviewItem> GetSupplyDetails()
     {
-        const string sql = """
-                           SELECT
-                               sd.ID_SUPPLIES,
-                               sd.ID_PRODUCT,
-                               p.PRODUCT_NAME,
-                               sd.QUANTITY,
-                               sd.UNIT_PRICE,
-                               sd.PRODUCTION_DATE,
-                               ss.NAME AS STATUS_NAME
-                           FROM SUPPLIES_DETAILS sd
-                           INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
-                           INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
-                           INNER JOIN PRODUCTS p ON p.ID_PRODUCT = sd.ID_PRODUCT
-                           ORDER BY sd.ID_SUPPLIES DESC, p.PRODUCT_NAME;
-                           """;
+        const string sql =
+            """
+            SELECT
+                sd.ID_SUPPLIES,
+                sd.ID_PRODUCT,
+                p.PRODUCT_NAME,
+                sd.QUANTITY,
+                sd.UNIT_PRICE,
+                sd.PRODUCTION_DATE,
+                ss.NAME AS STATUS_NAME
+            FROM SUPPLIES_DETAILS sd
+            INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+            INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+            INNER JOIN PRODUCTS p ON p.ID_PRODUCT = sd.ID_PRODUCT
+            ORDER BY sd.ID_SUPPLIES DESC, p.PRODUCT_NAME;
+            """;
 
         var result = new List<SupplyDetailPreviewItem>();
         using var connection = OpenConnection();
@@ -432,18 +442,19 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<LossPreviewItem> GetLosses()
     {
-        const string sql = """
-                           SELECT
-                               l.ID_LOSS,
-                               l.ID_PRODUCT,
-                               l.QUANTITY,
-                               p.PRODUCT_NAME,
-                               l.REASON,
-                               l.LOSS_DATE
-                           FROM LOSSES l
-                           INNER JOIN PRODUCTS p ON p.ID_PRODUCT = l.ID_PRODUCT
-                           ORDER BY l.LOSS_DATE DESC;
-                           """;
+        const string sql =
+            """
+            SELECT
+                l.ID_LOSS,
+                l.ID_PRODUCT,
+                l.QUANTITY,
+                p.PRODUCT_NAME,
+                l.REASON,
+                l.LOSS_DATE
+            FROM LOSSES l
+            INNER JOIN PRODUCTS p ON p.ID_PRODUCT = l.ID_PRODUCT
+            ORDER BY l.LOSS_DATE DESC;
+            """;
 
         var result = new List<LossPreviewItem>();
         using var connection = OpenConnection();

@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Microsoft.Data.SqlClient;
 using TeaShopManager.Models;
 
@@ -12,10 +12,11 @@ public sealed partial class TeaShopRepository
 
         if (model.UserId == 0)
         {
-            const string insertSql = """
-                                     INSERT INTO USERS (LOGIN, PASSWORD, FULL_NAME, ID_ROLE)
-                                     VALUES (@login, @password, @fullName, @roleId);
-                                     """;
+            const string insertSql =
+                """
+                INSERT INTO USERS (LOGIN, PASSWORD, FULL_NAME, ID_ROLE)
+                VALUES (@login, @password, @fullName, @roleId);
+                """;
 
             using var command = new SqlCommand(insertSql, connection);
             command.Parameters.Add("@login", SqlDbType.VarChar, 50).Value = model.Login.Trim();
@@ -28,21 +29,23 @@ public sealed partial class TeaShopRepository
         }
 
         var updateSql = string.IsNullOrWhiteSpace(model.Password)
-            ? """
-              UPDATE USERS
-              SET LOGIN = @login,
-                  FULL_NAME = @fullName,
-                  ID_ROLE = @roleId
-              WHERE ID_USER = @userId;
-              """
-            : """
-              UPDATE USERS
-              SET LOGIN = @login,
-                  PASSWORD = @password,
-                  FULL_NAME = @fullName,
-                  ID_ROLE = @roleId
-              WHERE ID_USER = @userId;
-              """;
+            ?
+                """
+                UPDATE USERS
+                SET LOGIN = @login,
+                    FULL_NAME = @fullName,
+                    ID_ROLE = @roleId
+                WHERE ID_USER = @userId;
+                """
+            :
+                """
+                UPDATE USERS
+                SET LOGIN = @login,
+                    PASSWORD = @password,
+                    FULL_NAME = @fullName,
+                    ID_ROLE = @roleId
+                WHERE ID_USER = @userId;
+                """;
 
         using (var command = new SqlCommand(updateSql, connection))
         {
@@ -79,11 +82,12 @@ public sealed partial class TeaShopRepository
             return;
         }
 
-        const string updateSql = """
-                                 UPDATE CATEGORY
-                                 SET CATEGORY_NAME = @name
-                                 WHERE ID_CATEGORY = @categoryId;
-                                 """;
+        const string updateSql =
+            """
+            UPDATE CATEGORY
+            SET CATEGORY_NAME = @name
+            WHERE ID_CATEGORY = @categoryId;
+            """;
         using (var command = new SqlCommand(updateSql, connection))
         {
             command.Parameters.Add("@categoryId", SqlDbType.SmallInt).Value = model.CategoryId;
@@ -128,10 +132,11 @@ public sealed partial class TeaShopRepository
         using var connection = OpenConnection();
         if (model.SupplierId == 0)
         {
-            const string insertSql = """
-                                     INSERT INTO SUPPLIERS (SUPPLIER_NAME, CONTACT_PERSON, PHONE, EMAIL, ADDRESS)
-                                     VALUES (@name, @contact, @phone, @email, @address);
-                                     """;
+            const string insertSql =
+                """
+                INSERT INTO SUPPLIERS (SUPPLIER_NAME, CONTACT_PERSON, PHONE, EMAIL, ADDRESS)
+                VALUES (@name, @contact, @phone, @email, @address);
+                """;
             using var command = new SqlCommand(insertSql, connection);
             command.Parameters.Add("@name", SqlDbType.VarChar, 4000).Value = model.SupplierName.Trim();
             command.Parameters.Add("@contact", SqlDbType.VarChar, 4000).Value = model.ContactPerson.Trim();
@@ -142,15 +147,16 @@ public sealed partial class TeaShopRepository
             return;
         }
 
-        const string updateSql = """
-                                 UPDATE SUPPLIERS
-                                 SET SUPPLIER_NAME = @name,
-                                     CONTACT_PERSON = @contact,
-                                     PHONE = @phone,
-                                     EMAIL = @email,
-                                     ADDRESS = @address
-                                 WHERE ID_SUPPLIER = @supplierId;
-                                 """;
+        const string updateSql =
+            """
+            UPDATE SUPPLIERS
+            SET SUPPLIER_NAME = @name,
+                CONTACT_PERSON = @contact,
+                PHONE = @phone,
+                EMAIL = @email,
+                ADDRESS = @address
+            WHERE ID_SUPPLIER = @supplierId;
+            """;
 
         using (var command = new SqlCommand(updateSql, connection))
         {
@@ -175,12 +181,13 @@ public sealed partial class TeaShopRepository
         using var connection = OpenConnection();
         if (model.ProductId == 0)
         {
-            const string insertSql = """
-                                     INSERT INTO PRODUCTS
-                                         (PRODUCT_NAME, PRICE, MIN_STOCK_QUANTITY, DESCRIPTION, EXPIRATION_DATE, ID_CATEGORY)
-                                     VALUES
-                                         (@name, @price, @minStock, @description, @expirationDays, @categoryId);
-                                     """;
+            const string insertSql =
+                """
+                INSERT INTO PRODUCTS
+                    (PRODUCT_NAME, PRICE, MIN_STOCK_QUANTITY, DESCRIPTION, EXPIRATION_DATE, ID_CATEGORY)
+                VALUES
+                    (@name, @price, @minStock, @description, @expirationDays, @categoryId);
+                """;
             using var command = new SqlCommand(insertSql, connection);
             FillProductParameters(command, model);
             command.ExecuteNonQuery();
@@ -188,16 +195,17 @@ public sealed partial class TeaShopRepository
             return;
         }
 
-        const string updateSql = """
-                                 UPDATE PRODUCTS
-                                 SET PRODUCT_NAME = @name,
-                                     PRICE = @price,
-                                     MIN_STOCK_QUANTITY = @minStock,
-                                     DESCRIPTION = @description,
-                                     EXPIRATION_DATE = @expirationDays,
-                                     ID_CATEGORY = @categoryId
-                                 WHERE ID_PRODUCT = @productId;
-                                 """;
+        const string updateSql =
+            """
+            UPDATE PRODUCTS
+            SET PRODUCT_NAME = @name,
+                PRICE = @price,
+                MIN_STOCK_QUANTITY = @minStock,
+                DESCRIPTION = @description,
+                EXPIRATION_DATE = @expirationDays,
+                ID_CATEGORY = @categoryId
+            WHERE ID_PRODUCT = @productId;
+            """;
         using (var command = new SqlCommand(updateSql, connection))
         {
             command.Parameters.Add("@productId", SqlDbType.Int).Value = model.ProductId;

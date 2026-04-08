@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Microsoft.Data.SqlClient;
 using TeaShopManager.Models;
 
@@ -11,10 +11,11 @@ public sealed partial class TeaShopRepository
         using var connection = OpenConnection();
         if (model.OrderId == 0)
         {
-            const string insertSql = """
-                                     INSERT INTO ORDERS (ORDER_DATE, ID_STATUS, ID_USER)
-                                     VALUES (@orderDate, @statusId, @userId);
-                                     """;
+            const string insertSql =
+                """
+                INSERT INTO ORDERS (ORDER_DATE, ID_STATUS, ID_USER)
+                VALUES (@orderDate, @statusId, @userId);
+                """;
             using var command = new SqlCommand(insertSql, connection);
             command.Parameters.Add("@orderDate", SqlDbType.DateTime).Value = model.OrderDate;
             command.Parameters.Add("@statusId", SqlDbType.Int).Value = model.StatusId;
@@ -24,13 +25,14 @@ public sealed partial class TeaShopRepository
             return;
         }
 
-        const string updateSql = """
-                                 UPDATE ORDERS
-                                 SET ORDER_DATE = @orderDate,
-                                     ID_STATUS = @statusId,
-                                     ID_USER = @userId
-                                 WHERE ID_ORDER = @orderId;
-                                 """;
+        const string updateSql =
+            """
+            UPDATE ORDERS
+            SET ORDER_DATE = @orderDate,
+                ID_STATUS = @statusId,
+                ID_USER = @userId
+            WHERE ID_ORDER = @orderId;
+            """;
         using var updateCommand = new SqlCommand(updateSql, connection);
         updateCommand.Parameters.Add("@orderId", SqlDbType.Int).Value = model.OrderId;
         updateCommand.Parameters.Add("@orderDate", SqlDbType.DateTime).Value = model.OrderDate;
@@ -88,21 +90,23 @@ public sealed partial class TeaShopRepository
                     deleteCommand.ExecuteNonQuery();
                 }
 
-                using var insertCommand = new SqlCommand("""
-                                                         INSERT INTO ORDER_DETAILS (ID_PRODUCT, ID_ORDER, QUANTITY, PRICE)
-                                                         VALUES (@productId, @orderId, @quantity, @price);
-                                                         """, connection, transaction);
+                using var insertCommand = new SqlCommand(
+                    """
+                    INSERT INTO ORDER_DETAILS (ID_PRODUCT, ID_ORDER, QUANTITY, PRICE)
+                    VALUES (@productId, @orderId, @quantity, @price);
+                    """, connection, transaction);
                 FillOrderDetailParameters(insertCommand, model);
                 insertCommand.ExecuteNonQuery();
             }
             else
             {
-                using var updateCommand = new SqlCommand("""
-                                                         UPDATE ORDER_DETAILS
-                                                         SET QUANTITY = @quantity,
-                                                             PRICE = @price
-                                                         WHERE ID_ORDER = @orderId AND ID_PRODUCT = @productId;
-                                                         """, connection, transaction);
+                using var updateCommand = new SqlCommand(
+                    """
+                    UPDATE ORDER_DETAILS
+                    SET QUANTITY = @quantity,
+                        PRICE = @price
+                    WHERE ID_ORDER = @orderId AND ID_PRODUCT = @productId;
+                    """, connection, transaction);
                 FillOrderDetailParameters(updateCommand, model);
                 updateCommand.ExecuteNonQuery();
             }

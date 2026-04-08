@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Microsoft.Data.SqlClient;
 using TeaShopManager.Models;
 
@@ -41,11 +41,12 @@ public sealed partial class TeaShopRepository
 
             var statusId = GetCompletedSaleStatusId(connection, transaction);
 
-            const string orderSql = """
-                                    INSERT INTO ORDERS (ORDER_DATE, ID_STATUS, ID_USER)
-                                    OUTPUT INSERTED.ID_ORDER
-                                    VALUES (GETDATE(), @statusId, @userId);
-                                    """;
+            const string orderSql =
+                """
+                INSERT INTO ORDERS (ORDER_DATE, ID_STATUS, ID_USER)
+                OUTPUT INSERTED.ID_ORDER
+                VALUES (GETDATE(), @statusId, @userId);
+                """;
 
             int orderId;
             using (var orderCommand = new SqlCommand(orderSql, connection, transaction))
@@ -55,10 +56,11 @@ public sealed partial class TeaShopRepository
                 orderId = Convert.ToInt32(orderCommand.ExecuteScalar());
             }
 
-            const string detailSql = """
-                                     INSERT INTO ORDER_DETAILS (ID_PRODUCT, ID_ORDER, QUANTITY, PRICE)
-                                     VALUES (@productId, @orderId, @quantity, @price);
-                                     """;
+            const string detailSql =
+                """
+                INSERT INTO ORDER_DETAILS (ID_PRODUCT, ID_ORDER, QUANTITY, PRICE)
+                VALUES (@productId, @orderId, @quantity, @price);
+                """;
 
             foreach (var line in lines)
             {
@@ -149,13 +151,14 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<LookupItem> GetReportSellerLookupItems()
     {
-        const string sql = """
-                           SELECT
-                               u.ID_USER,
-                               COALESCE(NULLIF(LTRIM(RTRIM(u.FULL_NAME)), ''), u.LOGIN) AS DISPLAY_NAME
-                           FROM USERS u
-                           ORDER BY DISPLAY_NAME;
-                           """;
+        const string sql =
+            """
+            SELECT
+                u.ID_USER,
+                COALESCE(NULLIF(LTRIM(RTRIM(u.FULL_NAME)), ''), u.LOGIN) AS DISPLAY_NAME
+            FROM USERS u
+            ORDER BY DISPLAY_NAME;
+            """;
 
         var result = new List<LookupItem>();
         using var connection = OpenConnection();

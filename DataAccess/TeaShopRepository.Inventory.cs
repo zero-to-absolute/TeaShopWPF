@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Microsoft.Data.SqlClient;
 using TeaShopManager.Models;
 
@@ -16,10 +16,11 @@ public sealed partial class TeaShopRepository
                 throw new InvalidOperationException("Нельзя создавать поставку сразу в принятом статусе. Сначала создайте поставку и добавьте её позиции.");
             }
 
-            const string insertSql = """
-                                     INSERT INTO SUPPLIES (CREATION_DATE, DELIVERY_DATE, ID_STATUS, ID_SUPPLIER, ID_USER)
-                                     VALUES (@creationDate, @deliveryDate, @statusId, @supplierId, @userId);
-                                     """;
+            const string insertSql =
+                """
+                INSERT INTO SUPPLIES (CREATION_DATE, DELIVERY_DATE, ID_STATUS, ID_SUPPLIER, ID_USER)
+                VALUES (@creationDate, @deliveryDate, @statusId, @supplierId, @userId);
+                """;
             using var command = new SqlCommand(insertSql, connection);
             FillSupplyParameters(command, model);
             command.ExecuteNonQuery();
@@ -37,15 +38,16 @@ public sealed partial class TeaShopRepository
                 EnsureSupplyHasDetails(connection, transaction, model.SupplyId);
             }
 
-            const string updateSql = """
-                                     UPDATE SUPPLIES
-                                     SET CREATION_DATE = @creationDate,
-                                         DELIVERY_DATE = @deliveryDate,
-                                         ID_STATUS = @statusId,
-                                         ID_SUPPLIER = @supplierId,
-                                         ID_USER = @userId
-                                     WHERE ID_SUPPLIES = @supplyId;
-                                     """;
+            const string updateSql =
+                """
+                UPDATE SUPPLIES
+                SET CREATION_DATE = @creationDate,
+                    DELIVERY_DATE = @deliveryDate,
+                    ID_STATUS = @statusId,
+                    ID_SUPPLIER = @supplierId,
+                    ID_USER = @userId
+                WHERE ID_SUPPLIES = @supplyId;
+                """;
             using var updateCommand = new SqlCommand(updateSql, connection, transaction);
             updateCommand.Parameters.Add("@supplyId", SqlDbType.Int).Value = model.SupplyId;
             updateCommand.Parameters.Add("@creationDate", SqlDbType.Date).Value = model.CreationDate.Date;
@@ -133,22 +135,24 @@ public sealed partial class TeaShopRepository
                     deleteCommand.ExecuteNonQuery();
                 }
 
-                using var insertCommand = new SqlCommand("""
-                                                         INSERT INTO SUPPLIES_DETAILS (ID_PRODUCT, ID_SUPPLIES, QUANTITY, UNIT_PRICE, PRODUCTION_DATE)
-                                                         VALUES (@productId, @supplyId, @quantity, @unitPrice, @productionDate);
-                                                         """, connection, transaction);
+                using var insertCommand = new SqlCommand(
+                    """
+                    INSERT INTO SUPPLIES_DETAILS (ID_PRODUCT, ID_SUPPLIES, QUANTITY, UNIT_PRICE, PRODUCTION_DATE)
+                    VALUES (@productId, @supplyId, @quantity, @unitPrice, @productionDate);
+                    """, connection, transaction);
                 FillSupplyDetailParameters(insertCommand, model);
                 insertCommand.ExecuteNonQuery();
             }
             else
             {
-                using var updateCommand = new SqlCommand("""
-                                                         UPDATE SUPPLIES_DETAILS
-                                                         SET QUANTITY = @quantity,
-                                                             UNIT_PRICE = @unitPrice,
-                                                             PRODUCTION_DATE = @productionDate
-                                                         WHERE ID_SUPPLIES = @supplyId AND ID_PRODUCT = @productId;
-                                                         """, connection, transaction);
+                using var updateCommand = new SqlCommand(
+                    """
+                    UPDATE SUPPLIES_DETAILS
+                    SET QUANTITY = @quantity,
+                        UNIT_PRICE = @unitPrice,
+                        PRODUCTION_DATE = @productionDate
+                    WHERE ID_SUPPLIES = @supplyId AND ID_PRODUCT = @productId;
+                    """, connection, transaction);
                 FillSupplyDetailParameters(updateCommand, model);
                 updateCommand.ExecuteNonQuery();
             }
@@ -188,12 +192,13 @@ public sealed partial class TeaShopRepository
             EnsureSupplyHasDetails(connection, transaction, supplyId);
             var acceptedStatusId = GetAcceptedSupplyStatusId(connection, transaction);
 
-            const string sql = """
-                               UPDATE SUPPLIES
-                               SET ID_STATUS = @statusId,
-                                   DELIVERY_DATE = COALESCE(DELIVERY_DATE, CAST(GETDATE() AS date))
-                               WHERE ID_SUPPLIES = @supplyId;
-                               """;
+            const string sql =
+                """
+                UPDATE SUPPLIES
+                SET ID_STATUS = @statusId,
+                    DELIVERY_DATE = COALESCE(DELIVERY_DATE, CAST(GETDATE() AS date))
+                WHERE ID_SUPPLIES = @supplyId;
+                """;
 
             using var command = new SqlCommand(sql, connection, transaction);
             command.Parameters.Add("@statusId", SqlDbType.Int).Value = acceptedStatusId;
@@ -220,24 +225,26 @@ public sealed partial class TeaShopRepository
         {
             if (model.LossId == 0)
             {
-                const string insertSql = """
-                                         INSERT INTO LOSSES (ID_PRODUCT, QUANTITY, REASON, LOSS_DATE)
-                                         VALUES (@productId, @quantity, @reason, @lossDate);
-                                         """;
+                const string insertSql =
+                    """
+                    INSERT INTO LOSSES (ID_PRODUCT, QUANTITY, REASON, LOSS_DATE)
+                    VALUES (@productId, @quantity, @reason, @lossDate);
+                    """;
                 using var command = new SqlCommand(insertSql, connection, transaction);
                 FillLossParameters(command, model);
                 command.ExecuteNonQuery();
             }
             else
             {
-                const string updateSql = """
-                                         UPDATE LOSSES
-                                         SET ID_PRODUCT = @productId,
-                                             QUANTITY = @quantity,
-                                             REASON = @reason,
-                                             LOSS_DATE = @lossDate
-                                         WHERE ID_LOSS = @lossId;
-                                         """;
+                const string updateSql =
+                    """
+                    UPDATE LOSSES
+                    SET ID_PRODUCT = @productId,
+                        QUANTITY = @quantity,
+                        REASON = @reason,
+                        LOSS_DATE = @lossDate
+                    WHERE ID_LOSS = @lossId;
+                    """;
                 using var updateCommand = new SqlCommand(updateSql, connection, transaction);
                 updateCommand.Parameters.Add("@lossId", SqlDbType.Int).Value = model.LossId;
                 FillLossParameters(updateCommand, model);
@@ -279,22 +286,23 @@ public sealed partial class TeaShopRepository
 
     public IReadOnlyList<ProductMovementPreviewItem> GetProductMovements(int productId)
     {
-        var incomingSql = $"""
-                           SELECT
-                               sd.ID_SUPPLIES,
-                               sp.SUPPLIER_NAME,
-                               COALESCE(s.DELIVERY_DATE, s.CREATION_DATE) AS RECEIVED_DATE,
-                               sd.PRODUCTION_DATE,
-                               sd.UNIT_PRICE,
-                               sd.QUANTITY
-                           FROM SUPPLIES_DETAILS sd
-                           INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
-                           INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
-                           INNER JOIN SUPPLIERS sp ON sp.ID_SUPPLIER = s.ID_SUPPLIER
-                           WHERE sd.ID_PRODUCT = @productId
-                             AND ({AcceptedSupplyStatusCondition})
-                           ORDER BY COALESCE(s.DELIVERY_DATE, s.CREATION_DATE), sd.ID_SUPPLIES, sd.PRODUCTION_DATE, sd.ID_PRODUCT;
-                           """;
+        var incomingSql =
+            $"""
+            SELECT
+                sd.ID_SUPPLIES,
+                sp.SUPPLIER_NAME,
+                COALESCE(s.DELIVERY_DATE, s.CREATION_DATE) AS RECEIVED_DATE,
+                sd.PRODUCTION_DATE,
+                sd.UNIT_PRICE,
+                sd.QUANTITY
+            FROM SUPPLIES_DETAILS sd
+            INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+            INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+            INNER JOIN SUPPLIERS sp ON sp.ID_SUPPLIER = s.ID_SUPPLIER
+            WHERE sd.ID_PRODUCT = @productId
+              AND ({AcceptedSupplyStatusCondition})
+            ORDER BY COALESCE(s.DELIVERY_DATE, s.CREATION_DATE), sd.ID_SUPPLIES, sd.PRODUCTION_DATE, sd.ID_PRODUCT;
+            """;
 
         var result = new List<ProductMovementPreviewItem>();
         using var connection = OpenConnection();
@@ -355,26 +363,27 @@ public sealed partial class TeaShopRepository
 
     public CustomerReturnEditorModel GetCustomerReturnDraft(int productId)
     {
-        var sql = $"""
-                    SELECT
-                        p.ID_PRODUCT,
-                        p.PRODUCT_NAME,
-                        c.CATEGORY_NAME,
-                        p.PRICE,
-                        lastSupply.UNIT_PRICE AS LAST_UNIT_PRICE
-                    FROM PRODUCTS p
-                    INNER JOIN CATEGORY c ON c.ID_CATEGORY = p.ID_CATEGORY
-                    OUTER APPLY (
-                        SELECT TOP (1) sd.UNIT_PRICE
-                        FROM SUPPLIES_DETAILS sd
-                        INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
-                        INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
-                        WHERE sd.ID_PRODUCT = p.ID_PRODUCT
-                          AND ({AcceptedSupplyStatusCondition})
-                        ORDER BY COALESCE(s.DELIVERY_DATE, s.CREATION_DATE) DESC, sd.ID_SUPPLIES DESC
-                    ) lastSupply
-                    WHERE p.ID_PRODUCT = @productId;
-                    """;
+        var sql =
+            $"""
+            SELECT
+                p.ID_PRODUCT,
+                p.PRODUCT_NAME,
+                c.CATEGORY_NAME,
+                p.PRICE,
+                lastSupply.UNIT_PRICE AS LAST_UNIT_PRICE
+            FROM PRODUCTS p
+            INNER JOIN CATEGORY c ON c.ID_CATEGORY = p.ID_CATEGORY
+            OUTER APPLY (
+                SELECT TOP (1) sd.UNIT_PRICE
+                FROM SUPPLIES_DETAILS sd
+                INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                WHERE sd.ID_PRODUCT = p.ID_PRODUCT
+                  AND ({AcceptedSupplyStatusCondition})
+                ORDER BY COALESCE(s.DELIVERY_DATE, s.CREATION_DATE) DESC, sd.ID_SUPPLIES DESC
+            ) lastSupply
+            WHERE p.ID_PRODUCT = @productId;
+            """;
 
         using var connection = OpenConnection();
         using var command = new SqlCommand(sql, connection);
@@ -433,11 +442,12 @@ public sealed partial class TeaShopRepository
             var supplierId = GetOrCreateCustomerReturnSupplierId(connection, transaction);
             var statusId = GetAcceptedSupplyStatusId(connection, transaction);
 
-            const string supplySql = """
-                                     INSERT INTO SUPPLIES (CREATION_DATE, DELIVERY_DATE, ID_STATUS, ID_SUPPLIER, ID_USER)
-                                     OUTPUT INSERTED.ID_SUPPLIES
-                                     VALUES (@creationDate, @deliveryDate, @statusId, @supplierId, @userId);
-                                     """;
+            const string supplySql =
+                """
+                INSERT INTO SUPPLIES (CREATION_DATE, DELIVERY_DATE, ID_STATUS, ID_SUPPLIER, ID_USER)
+                OUTPUT INSERTED.ID_SUPPLIES
+                VALUES (@creationDate, @deliveryDate, @statusId, @supplierId, @userId);
+                """;
 
             int supplyId;
             using (var supplyCommand = new SqlCommand(supplySql, connection, transaction))
@@ -450,10 +460,11 @@ public sealed partial class TeaShopRepository
                 supplyId = Convert.ToInt32(supplyCommand.ExecuteScalar());
             }
 
-            const string detailSql = """
-                                     INSERT INTO SUPPLIES_DETAILS (ID_PRODUCT, ID_SUPPLIES, QUANTITY, UNIT_PRICE, PRODUCTION_DATE)
-                                     VALUES (@productId, @supplyId, @quantity, @unitPrice, @productionDate);
-                                     """;
+            const string detailSql =
+                """
+                INSERT INTO SUPPLIES_DETAILS (ID_PRODUCT, ID_SUPPLIES, QUANTITY, UNIT_PRICE, PRODUCTION_DATE)
+                VALUES (@productId, @supplyId, @quantity, @unitPrice, @productionDate);
+                """;
 
             using (var detailCommand = new SqlCommand(detailSql, connection, transaction))
             {
