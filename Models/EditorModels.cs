@@ -164,6 +164,8 @@ public sealed class LossEditorModel
 
     public int ProductId { get; set; }
 
+    public int Quantity { get; set; } = 1;
+
     public string Reason { get; set; } = string.Empty;
 
     public DateTime LossDate { get; set; } = DateTime.Today;

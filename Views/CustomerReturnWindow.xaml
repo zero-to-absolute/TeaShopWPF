@@ -30,7 +30,7 @@
                             Background="{StaticResource PanelBrush}">
                         <TextBlock Style="{StaticResource BodyTextStyle}"
                                    TextWrapping="Wrap"
-                                   Text="Возврат для непродовольственного товара будет сохранён как отдельное входящее движение и попадёт в FIFO по дате возврата." />
+                                   Text="Возврат будет добавлен как новое входящее FIFO-движение." />
                     </Border>
 
                     <TextBlock Margin="0,18,0,0" FontWeight="SemiBold" Text="Товар" />

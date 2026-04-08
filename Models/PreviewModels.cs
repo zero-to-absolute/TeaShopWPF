@@ -18,8 +18,6 @@ public sealed class UserPreviewItem
     [Display(Name = "Логин")]
     public string Login { get; init; } = string.Empty;
 
-    public string PasswordHash { get; init; } = string.Empty;
-
     [Display(Name = "ФИО")]
     public string FullName { get; init; } = string.Empty;
 
@@ -83,7 +81,7 @@ public sealed class ProductMovementPreviewItem
 
     public int QuantityValue { get; init; }
 
-    public int SoldQuantityValue { get; init; }
+    public int ConsumedQuantityValue { get; init; }
 
     public int RemainingQuantityValue { get; init; }
 
@@ -108,8 +106,8 @@ public sealed class ProductMovementPreviewItem
     [Display(Name = "Было в партии")]
     public string Quantity { get; init; } = string.Empty;
 
-    [Display(Name = "Продано")]
-    public string SoldQuantity { get; init; } = string.Empty;
+    [Display(Name = "Израсходовано")]
+    public string ConsumedQuantity { get; init; } = string.Empty;
 
     [Display(Name = "Осталось")]
     public string RemainingQuantity { get; init; } = string.Empty;
@@ -316,6 +314,8 @@ public sealed class LossPreviewItem
 
     public int ProductId { get; init; }
 
+    public int QuantityValue { get; init; }
+
     public DateTime LossDateValue { get; init; }
 
     [Display(Name = "Код списания")]
@@ -323,6 +323,9 @@ public sealed class LossPreviewItem
 
     [Display(Name = "Товар")]
     public string ProductName { get; init; } = string.Empty;
+
+    [Display(Name = "Количество")]
+    public string Quantity { get; init; } = string.Empty;
 
     [Display(Name = "Причина")]
     public string Reason { get; init; } = string.Empty;
@@ -333,20 +336,276 @@ public sealed class LossPreviewItem
 
 public sealed class ReportOption
 {
+    public string Key { get; init; } = string.Empty;
+
     public int Number { get; init; }
 
     public string Title { get; init; } = string.Empty;
 
+    public string Description { get; init; } = string.Empty;
+
     public string ButtonText { get; init; } = "Выгрузить CSV";
+}
+
+public static class AccountantReportKeys
+{
+    public const string SalesBySeller = nameof(SalesBySeller);
+    public const string SalesByCategory = nameof(SalesByCategory);
+    public const string Cash = nameof(Cash);
+}
+
+public sealed class ReportMetricCard
+{
+    public string Label { get; init; } = string.Empty;
+
+    public string Value { get; init; } = string.Empty;
+}
+
+public sealed class SalesBySellerReportRow
+{
+    public int SellerId { get; init; }
+
+    public int OrdersCountValue { get; init; }
+
+    public int PositionsCountValue { get; init; }
+
+    public int QuantityValue { get; init; }
+
+    public decimal RevenueValue { get; init; }
+
+    public decimal AverageCheckValue { get; init; }
+
+    [Display(Name = "Продавец")]
+    public string SellerName { get; init; } = string.Empty;
+
+    [Display(Name = "Заказов")]
+    public string OrdersCount { get; init; } = string.Empty;
+
+    [Display(Name = "Позиций")]
+    public string PositionsCount { get; init; } = string.Empty;
+
+    [Display(Name = "Продано")]
+    public string Quantity { get; init; } = string.Empty;
+
+    [Display(Name = "Выручка")]
+    public string Revenue { get; init; } = string.Empty;
+
+    [Display(Name = "Средний чек")]
+    public string AverageCheck { get; init; } = string.Empty;
+}
+
+public sealed class SalesByCategoryReportRow
+{
+    public short CategoryId { get; init; }
+
+    public int OrdersCountValue { get; init; }
+
+    public int ProductCountValue { get; init; }
+
+    public int QuantityValue { get; init; }
+
+    public decimal RevenueValue { get; init; }
+
+    public decimal AveragePriceValue { get; init; }
+
+    [Display(Name = "Категория")]
+    public string CategoryName { get; init; } = string.Empty;
+
+    [Display(Name = "Заказов")]
+    public string OrdersCount { get; init; } = string.Empty;
+
+    [Display(Name = "Товаров")]
+    public string ProductCount { get; init; } = string.Empty;
+
+    [Display(Name = "Продано")]
+    public string Quantity { get; init; } = string.Empty;
+
+    [Display(Name = "Выручка")]
+    public string Revenue { get; init; } = string.Empty;
+
+    [Display(Name = "Средняя цена")]
+    public string AveragePrice { get; init; } = string.Empty;
+}
+
+public sealed class CashReportRow
+{
+    public DateTime ReportDateValue { get; init; }
+
+    public int OrdersCountValue { get; init; }
+
+    public int PositionsCountValue { get; init; }
+
+    public int QuantityValue { get; init; }
+
+    public decimal RevenueValue { get; init; }
+
+    public decimal AverageCheckValue { get; init; }
+
+    [Display(Name = "Дата")]
+    public string ReportDate { get; init; } = string.Empty;
+
+    [Display(Name = "Заказов")]
+    public string OrdersCount { get; init; } = string.Empty;
+
+    [Display(Name = "Позиций")]
+    public string PositionsCount { get; init; } = string.Empty;
+
+    [Display(Name = "Продано")]
+    public string Quantity { get; init; } = string.Empty;
+
+    [Display(Name = "Выручка")]
+    public string Revenue { get; init; } = string.Empty;
+
+    [Display(Name = "Средний чек")]
+    public string AverageCheck { get; init; } = string.Empty;
 }
 
 public sealed class AdminReportCard
 {
+    public string Key { get; init; } = string.Empty;
+
     public string Title { get; init; } = string.Empty;
 
     public string Description { get; init; } = string.Empty;
 
     public string AccentColor { get; init; } = "#E6D3C2";
+}
+
+public static class ManagementReportKeys
+{
+    public const string Sales = nameof(Sales);
+    public const string Profitability = nameof(Profitability);
+    public const string Losses = nameof(Losses);
+}
+
+public sealed class ManagementSalesTopProductRow
+{
+    public int ProductId { get; init; }
+
+    public int OrdersCountValue { get; init; }
+
+    public int QuantityValue { get; init; }
+
+    public decimal RevenueValue { get; init; }
+
+    [Display(Name = "Товар")]
+    public string ProductName { get; init; } = string.Empty;
+
+    [Display(Name = "Категория")]
+    public string CategoryName { get; init; } = string.Empty;
+
+    [Display(Name = "Заказов")]
+    public string OrdersCount { get; init; } = string.Empty;
+
+    [Display(Name = "Продано")]
+    public string Quantity { get; init; } = string.Empty;
+
+    [Display(Name = "Выручка")]
+    public string Revenue { get; init; } = string.Empty;
+}
+
+public sealed class ProfitabilityReportRow
+{
+    public int ProductId { get; init; }
+
+    public short CategoryId { get; init; }
+
+    public int QuantitySoldValue { get; init; }
+
+    public decimal RevenueValue { get; init; }
+
+    public decimal AveragePurchaseCostValue { get; init; }
+
+    public decimal EstimatedCostValue { get; init; }
+
+    public decimal GrossProfitValue { get; init; }
+
+    public decimal MarginPercentValue { get; init; }
+
+    [Display(Name = "Товар")]
+    public string ProductName { get; init; } = string.Empty;
+
+    [Display(Name = "Категория")]
+    public string CategoryName { get; init; } = string.Empty;
+
+    [Display(Name = "Продано")]
+    public string QuantitySold { get; init; } = string.Empty;
+
+    [Display(Name = "Выручка")]
+    public string Revenue { get; init; } = string.Empty;
+
+    [Display(Name = "Ср. себестоимость")]
+    public string AveragePurchaseCost { get; init; } = string.Empty;
+
+    [Display(Name = "Себестоимость")]
+    public string EstimatedCost { get; init; } = string.Empty;
+
+    [Display(Name = "Валовая прибыль")]
+    public string GrossProfit { get; init; } = string.Empty;
+
+    [Display(Name = "Маржа")]
+    public string MarginPercent { get; init; } = string.Empty;
+}
+
+public sealed class LossAnalyticsReportRow
+{
+    public int ProductId { get; init; }
+
+    public short CategoryId { get; init; }
+
+    public int OperationsCountValue { get; init; }
+
+    public int QuantityValue { get; init; }
+
+    public decimal EstimatedCostValue { get; init; }
+
+    public bool IsExpiredLoss { get; init; }
+
+    [Display(Name = "Товар")]
+    public string ProductName { get; init; } = string.Empty;
+
+    [Display(Name = "Категория")]
+    public string CategoryName { get; init; } = string.Empty;
+
+    [Display(Name = "Причина")]
+    public string Reason { get; init; } = string.Empty;
+
+    [Display(Name = "Операций")]
+    public string OperationsCount { get; init; } = string.Empty;
+
+    [Display(Name = "Количество")]
+    public string Quantity { get; init; } = string.Empty;
+
+    [Display(Name = "Потери по себестоимости")]
+    public string EstimatedCost { get; init; } = string.Empty;
+}
+
+public sealed class CustomerReturnAnalyticsRow
+{
+    public int ProductId { get; init; }
+
+    public short CategoryId { get; init; }
+
+    public int ReturnsCountValue { get; init; }
+
+    public int QuantityValue { get; init; }
+
+    public decimal AmountValue { get; init; }
+
+    [Display(Name = "Товар")]
+    public string ProductName { get; init; } = string.Empty;
+
+    [Display(Name = "Категория")]
+    public string CategoryName { get; init; } = string.Empty;
+
+    [Display(Name = "Возвратов")]
+    public string ReturnsCount { get; init; } = string.Empty;
+
+    [Display(Name = "Количество")]
+    public string Quantity { get; init; } = string.Empty;
+
+    [Display(Name = "Сумма возвратов")]
+    public string Amount { get; init; } = string.Empty;
 }
 
 public sealed class QuickSaleItem

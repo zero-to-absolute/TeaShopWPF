@@ -117,6 +117,14 @@
             <Setter Property="Height" Value="36" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="Padding" Value="14,0" />
+            <Setter Property="Background" Value="#E7D4C2" />
+            <Setter Property="BorderBrush" Value="#D2B8A0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#DBC2AA" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <Style x:Key="MiniDangerButtonStyle" TargetType="Button" BasedOn="{StaticResource MiniActionButtonStyle}">
@@ -202,27 +210,30 @@
             <Setter Property="VerticalGridLinesBrush" Value="Transparent" />
             <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
             <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
-            <Setter Property="ColumnHeaderHeight" Value="48" />
-            <Setter Property="RowHeight" Value="56" />
+            <Setter Property="ColumnHeaderHeight" Value="50" />
+            <Setter Property="RowHeight" Value="58" />
             <Setter Property="ColumnHeaderStyle">
                 <Setter.Value>
                     <Style TargetType="DataGridColumnHeader">
                         <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
                         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
                         <Setter Property="FontWeight" Value="SemiBold" />
-                        <Setter Property="Padding" Value="14,10" />
+                        <Setter Property="Padding" Value="14,0" />
                         <Setter Property="BorderThickness" Value="0" />
+                        <Setter Property="VerticalContentAlignment" Value="Center" />
                     </Style>
                 </Setter.Value>
             </Setter>
             <Setter Property="CellStyle">
                 <Setter.Value>
                     <Style TargetType="DataGridCell">
-                        <Setter Property="Padding" Value="14,10" />
+                        <Setter Property="Padding" Value="14,0" />
                         <Setter Property="BorderThickness" Value="0" />
                         <Setter Property="Background" Value="Transparent" />
                         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
                         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         <Style.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter Property="Background" Value="Transparent" />
@@ -238,6 +249,7 @@
                         <Setter Property="BorderThickness" Value="0" />
                         <Setter Property="Background" Value="Transparent" />
                         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                        <Setter Property="VerticalAlignment" Value="Center" />
                         <Style.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter Property="Background" Value="#E8D9CA" />

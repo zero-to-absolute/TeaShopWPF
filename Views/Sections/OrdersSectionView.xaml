@@ -1,0 +1,128 @@
+<local:SectionViewBase x:Class="TeaShopManager.Views.Sections.OrdersSectionView"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:local="clr-namespace:TeaShopManager.Views.Sections">
+    <local:SectionViewBase.Style>
+        <Style TargetType="{x:Type local:SectionViewBase}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CurrentSectionKey}" Value="OrderDetails">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Orders">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </local:SectionViewBase.Style>
+
+    <Grid>
+        <Border>
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentSectionKey}" Value="OrderDetails">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Button Width="210"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="Добавить позицию"
+                        Click="AddOrderDetailButton_OnClick" />
+
+                <DataGrid Grid.Row="1"
+                          Margin="0,20,0,0"
+                          Style="{StaticResource ShellDataGridStyle}"
+                          ItemsSource="{Binding OrderDetails}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Код заказа" Binding="{Binding OrderCode}" Width="150" />
+                        <DataGridTextColumn Header="Товар" Binding="{Binding ProductName}" Width="*" />
+                        <DataGridTextColumn Header="Количество" Binding="{Binding Quantity}" Width="140" />
+                        <DataGridTextColumn Header="Цена" Binding="{Binding Price}" Width="140" />
+                        <DataGridTemplateColumn Header="Действия" Width="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Margin="0,0,8,0"
+                                                Style="{StaticResource MiniActionButtonStyle}"
+                                                Content="Изменить"
+                                                Tag="{Binding}"
+                                                Click="EditOrderDetailButton_OnClick" />
+                                        <Button Style="{StaticResource MiniDangerButtonStyle}"
+                                                Content="Удалить"
+                                                Tag="{Binding}"
+                                                Click="DeleteOrderDetailButton_OnClick" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <Border>
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Orders">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Button Width="170"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="Добавить заказ"
+                        Click="AddOrderButton_OnClick" />
+
+                <DataGrid Grid.Row="1"
+                          Margin="0,20,0,0"
+                          Style="{StaticResource ShellDataGridStyle}"
+                          ItemsSource="{Binding Orders}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Код заказа" Binding="{Binding OrderCode}" Width="150" />
+                        <DataGridTextColumn Header="Дата заказа" Binding="{Binding OrderDate}" Width="200" />
+                        <DataGridTextColumn Header="Статус заказа" Binding="{Binding StatusName}" Width="170" />
+                        <DataGridTextColumn Header="Сумма" Binding="{Binding TotalAmount}" Width="140" />
+                        <DataGridTemplateColumn Header="Действия" Width="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Margin="0,0,8,0"
+                                                Style="{StaticResource MiniActionButtonStyle}"
+                                                Content="Изменить"
+                                                Tag="{Binding}"
+                                                Click="EditOrderButton_OnClick" />
+                                        <Button Style="{StaticResource MiniDangerButtonStyle}"
+                                                Content="Удалить"
+                                                Tag="{Binding}"
+                                                Click="DeleteOrderButton_OnClick" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+    </Grid>
+</local:SectionViewBase>

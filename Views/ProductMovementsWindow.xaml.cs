@@ -13,13 +13,13 @@ public partial class ProductMovementsWindow : Window
         MovementItems = new ObservableCollection<ProductMovementPreviewItem>(movementItems);
         CanCreateReturn = !string.Equals(product.CategoryName.Trim(), "Чай", StringComparison.CurrentCultureIgnoreCase);
         WindowTitle = $"Партии товара: {product.ProductName}";
-        ProductCaption = $"Категория: {product.CategoryName}  •  Розничная цена: {product.Price}  •  Общий остаток: {product.StockQuantity}";
+        ProductCaption = $"Категория: {product.CategoryName}  •  Цена: {product.Price}  •  Остаток: {product.StockQuantity}";
         FifoCaption = MovementItems.Count == 0
-            ? "Для этого товара пока нет принятых партий. Как только появится поставка или возврат, они отобразятся здесь в очереди FIFO."
-            : "Продажи распределяются по FIFO: сначала списываются самые ранние принятые партии, затем более поздние. Возвраты непродовольственных товаров попадают в конец этой очереди по дате возврата.";
+            ? "Принятых партий пока нет."
+            : "FIFO: сначала списываются самые ранние партии.";
         ReturnPolicyCaption = CanCreateReturn
-            ? "Для категорий, отличных от \"Чай\", можно оформить возврат как новое входящее движение."
-            : "Для категории \"Чай\" возврат на склад отключён.";
+            ? "Для этой категории доступен возврат на склад."
+            : "Для категории \"Чай\" возврат на склад недоступен.";
         DataContext = this;
     }
 

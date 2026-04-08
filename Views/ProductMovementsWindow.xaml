@@ -64,7 +64,7 @@
                     <DataGridTextColumn Header="Дата производства" Binding="{Binding ProductionDate}" Width="150" />
                     <DataGridTextColumn Header="Закупочная цена" Binding="{Binding UnitPrice}" Width="140" />
                     <DataGridTextColumn Header="Было в партии" Binding="{Binding Quantity}" Width="130" />
-                    <DataGridTextColumn Header="Продано" Binding="{Binding SoldQuantity}" Width="120" />
+                    <DataGridTextColumn Header="Израсходовано" Binding="{Binding ConsumedQuantity}" Width="130" />
                     <DataGridTextColumn Header="Осталось" Binding="{Binding RemainingQuantity}" Width="120" />
                 </DataGrid.Columns>
             </DataGrid>

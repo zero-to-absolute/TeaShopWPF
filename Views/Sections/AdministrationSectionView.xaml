@@ -1,0 +1,238 @@
+<local:SectionViewBase x:Class="TeaShopManager.Views.Sections.AdministrationSectionView"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:local="clr-namespace:TeaShopManager.Views.Sections">
+    <local:SectionViewBase.Style>
+        <Style TargetType="{x:Type local:SectionViewBase}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Users">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Roles">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentSectionKey}" Value="StatusOrders">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentSectionKey}" Value="StatusSupplies">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </local:SectionViewBase.Style>
+
+    <Grid>
+        <Border>
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Users">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Button Width="170"
+                            HorizontalAlignment="Right"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Content="Добавить пользователя"
+                            Click="AddUserButton_OnClick" />
+                </Grid>
+
+                <DataGrid Grid.Row="1"
+                          Margin="0,20,0,0"
+                          Style="{StaticResource ShellDataGridStyle}"
+                          ItemsSource="{Binding Users}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Логин" Binding="{Binding Login}" Width="150" />
+                        <DataGridTextColumn Header="ФИО" Binding="{Binding FullName}" Width="*" />
+                        <DataGridTextColumn Header="Роль" Binding="{Binding RoleName}" Width="240" />
+                        <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="120" />
+                        <DataGridTemplateColumn Header="Действия" Width="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Margin="0,0,8,0"
+                                                Style="{StaticResource MiniActionButtonStyle}"
+                                                Content="Изменить"
+                                                Tag="{Binding}"
+                                                Click="EditUserButton_OnClick" />
+                                        <Button Style="{StaticResource MiniDangerButtonStyle}"
+                                                Content="Удалить"
+                                                Tag="{Binding}"
+                                                Click="DeleteUserButton_OnClick" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <Border>
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Roles">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Button Width="150"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="Добавить роль"
+                        Click="AddRoleButton_OnClick" />
+
+                <DataGrid Grid.Row="1"
+                          Margin="0,20,0,0"
+                          Style="{StaticResource ShellDataGridStyle}"
+                          ItemsSource="{Binding Roles}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Код роли" Binding="{Binding RoleCode}" Width="160" />
+                        <DataGridTextColumn Header="Название роли" Binding="{Binding RoleName}" Width="*" />
+                        <DataGridTemplateColumn Header="Действия" Width="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Margin="0,0,8,0"
+                                                Style="{StaticResource MiniActionButtonStyle}"
+                                                Content="Изменить"
+                                                Tag="{Binding}"
+                                                Click="EditRoleButton_OnClick" />
+                                        <Button Style="{StaticResource MiniDangerButtonStyle}"
+                                                Content="Удалить"
+                                                Tag="{Binding}"
+                                                Click="DeleteRoleButton_OnClick" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <Border>
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentSectionKey}" Value="StatusOrders">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Button Width="185"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="Добавить статус"
+                        Click="AddStatusOrderButton_OnClick" />
+
+                <DataGrid Grid.Row="1"
+                          Margin="0,20,0,0"
+                          Style="{StaticResource ShellDataGridStyle}"
+                          ItemsSource="{Binding StatusOrders}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Код статуса" Binding="{Binding StatusCode}" Width="170" />
+                        <DataGridTextColumn Header="Название статуса" Binding="{Binding StatusName}" Width="*" />
+                        <DataGridTemplateColumn Header="Действия" Width="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Margin="0,0,8,0"
+                                                Style="{StaticResource MiniActionButtonStyle}"
+                                                Content="Изменить"
+                                                Tag="{Binding}"
+                                                Click="EditStatusOrderButton_OnClick" />
+                                        <Button Style="{StaticResource MiniDangerButtonStyle}"
+                                                Content="Удалить"
+                                                Tag="{Binding}"
+                                                Click="DeleteStatusOrderButton_OnClick" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <Border>
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentSectionKey}" Value="StatusSupplies">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Button Width="185"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="Добавить статус"
+                        Click="AddStatusSupplyButton_OnClick" />
+
+                <DataGrid Grid.Row="1"
+                          Margin="0,20,0,0"
+                          Style="{StaticResource ShellDataGridStyle}"
+                          ItemsSource="{Binding StatusSupplies}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Код статуса" Binding="{Binding StatusCode}" Width="170" />
+                        <DataGridTextColumn Header="Название статуса" Binding="{Binding StatusName}" Width="*" />
+                        <DataGridTemplateColumn Header="Действия" Width="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Margin="0,0,8,0"
+                                                Style="{StaticResource MiniActionButtonStyle}"
+                                                Content="Изменить"
+                                                Tag="{Binding}"
+                                                Click="EditStatusSupplyButton_OnClick" />
+                                        <Button Style="{StaticResource MiniDangerButtonStyle}"
+                                                Content="Удалить"
+                                                Tag="{Binding}"
+                                                Click="DeleteStatusSupplyButton_OnClick" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+    </Grid>
+</local:SectionViewBase>

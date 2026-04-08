@@ -17,6 +17,7 @@ public partial class LossEditorWindow : Window
         DataContext = this;
 
         ProductComboBox.SelectedValue = model.ProductId == 0 && productItems.Count > 0 ? productItems[0].Id : model.ProductId;
+        QuantityTextBox.Text = model.Quantity <= 0 ? "1" : model.Quantity.ToString();
         ReasonTextBox.Text = model.Reason;
         LossDatePicker.SelectedDate = model.LossDate == default ? DateTime.Today : model.LossDate;
     }
@@ -33,7 +34,14 @@ public partial class LossEditorWindow : Window
             return;
         }
 
+        if (!int.TryParse(QuantityTextBox.Text, out var quantity) || quantity <= 0)
+        {
+            MessageBox.Show("Количество списания должно быть больше нуля.", "TeaShopManager", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         ResultModel.ProductId = Convert.ToInt32(ProductComboBox.SelectedValue);
+        ResultModel.Quantity = quantity;
         ResultModel.Reason = ReasonTextBox.Text.Trim();
         ResultModel.LossDate = LossDatePicker.SelectedDate.Value;
         DialogResult = true;

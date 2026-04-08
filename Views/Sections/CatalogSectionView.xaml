@@ -1,0 +1,307 @@
+<local:SectionViewBase x:Class="TeaShopManager.Views.Sections.CatalogSectionView"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:local="clr-namespace:TeaShopManager.Views.Sections">
+    <local:SectionViewBase.Style>
+        <Style TargetType="{x:Type local:SectionViewBase}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Categories">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Products">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Suppliers">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </local:SectionViewBase.Style>
+
+    <Grid>
+        <Border>
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Categories">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Button Width="170"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="Добавить категорию"
+                        Click="AddCategoryButton_OnClick" />
+
+                <DataGrid Grid.Row="1"
+                          Margin="0,20,0,0"
+                          Style="{StaticResource ShellDataGridStyle}"
+                          ItemsSource="{Binding Categories}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Код категории" Binding="{Binding CategoryCode}" Width="180" />
+                        <DataGridTextColumn Header="Название категории" Binding="{Binding CategoryName}" Width="*" />
+                        <DataGridTemplateColumn Header="Действия" Width="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Margin="0,0,8,0"
+                                                Style="{StaticResource MiniActionButtonStyle}"
+                                                Content="Изменить"
+                                                Tag="{Binding}"
+                                                Click="EditCategoryButton_OnClick" />
+                                        <Button Style="{StaticResource MiniDangerButtonStyle}"
+                                                Content="Удалить"
+                                                Tag="{Binding}"
+                                                Click="DeleteCategoryButton_OnClick" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <Border>
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Products">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Padding="4"
+                            Background="{StaticResource PanelBrush}"
+                            CornerRadius="14">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Все товары"
+                                    Click="ShowAllProductsTabButton_OnClick">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource TabButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsShowingAllProducts}" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+                                                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                <Setter Property="BorderThickness" Value="1" />
+                                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Margin="8,0,0,0"
+                                    Content="Минимальные остатки"
+                                    Click="ShowCriticalProductsTabButton_OnClick">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource TabButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsShowingCriticalProductsOnly}" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+                                                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                <Setter Property="BorderThickness" Value="1" />
+                                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Grid.Column="1"
+                            Width="160"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Content="Добавить товар"
+                            Click="AddProductButton_OnClick" />
+                </Grid>
+
+                <Border Grid.Row="1"
+                        Margin="0,18,0,0"
+                        Height="52"
+                        Background="#FFFDFC"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="14">
+                    <Grid Margin="16,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="26" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock VerticalAlignment="Center"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Text="&#xE721;" />
+
+                        <Grid Grid.Column="1">
+                            <TextBox x:Name="ProductSearchTextBox"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     FontSize="15"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding ProductSearchText, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Margin="2,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="15"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       IsHitTestVisible="False"
+                                       Text="Поиск товаров...">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=ProductSearchTextBox}" Value="">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <TextBlock Grid.Row="2"
+                           Margin="2,12,0,0"
+                           Style="{StaticResource BodyTextStyle}"
+                           Text="{Binding ProductInventoryCaption}" />
+
+                <DataGrid x:Name="ProductsDataGrid"
+                          Grid.Row="3"
+                          Margin="0,18,0,0"
+                          Style="{StaticResource ShellDataGridStyle}"
+                          ItemsSource="{Binding Products}"
+                          MouseDoubleClick="ProductsDataGrid_OnMouseDoubleClick">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Название товара" Binding="{Binding ProductName}" Width="*" />
+                        <DataGridTextColumn Header="Цена" Binding="{Binding Price}" Width="120" />
+                        <DataGridTextColumn Header="Категория" Binding="{Binding CategoryName}" Width="160" />
+                        <DataGridTemplateColumn Header="Остаток" Width="140">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock FontWeight="SemiBold"
+                                               Text="{Binding StockQuantity}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCritical}" Value="True">
+                                                        <Setter Property="Foreground" Value="{StaticResource DangerTextBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Мин. остаток" Binding="{Binding MinStockQuantity}" Width="140" />
+                        <DataGridTextColumn Header="Срок годности" Binding="{Binding ExpirationDate}" Width="160" />
+                        <DataGridTemplateColumn Header="Действия" Width="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Margin="0,0,8,0"
+                                                Style="{StaticResource MiniActionButtonStyle}"
+                                                Content="Изменить"
+                                                Tag="{Binding}"
+                                                Click="EditProductButton_OnClick" />
+                                        <Button Style="{StaticResource MiniDangerButtonStyle}"
+                                                Content="Удалить"
+                                                Tag="{Binding}"
+                                                Click="DeleteProductButton_OnClick" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <Border>
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentSectionKey}" Value="Suppliers">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Button Width="180"
+                            HorizontalAlignment="Right"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Content="Добавить поставщика"
+                            Click="AddSupplierButton_OnClick" />
+                </Grid>
+
+                <DataGrid Grid.Row="1"
+                          Margin="0,20,0,0"
+                          Style="{StaticResource ShellDataGridStyle}"
+                          ItemsSource="{Binding Suppliers}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Название поставщика" Binding="{Binding SupplierName}" Width="220" />
+                        <DataGridTextColumn Header="Контактное лицо" Binding="{Binding ContactPerson}" Width="180" />
+                        <DataGridTextColumn Header="Телефон" Binding="{Binding Phone}" Width="160" />
+                        <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="220" />
+                        <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="*" />
+                        <DataGridTemplateColumn Header="Действия" Width="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Margin="0,0,8,0"
+                                                Style="{StaticResource MiniActionButtonStyle}"
+                                                Content="Изменить"
+                                                Tag="{Binding}"
+                                                Click="EditSupplierButton_OnClick" />
+                                        <Button Style="{StaticResource MiniDangerButtonStyle}"
+                                                Content="Удалить"
+                                                Tag="{Binding}"
+                                                Click="DeleteSupplierButton_OnClick" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+    </Grid>
+</local:SectionViewBase>
