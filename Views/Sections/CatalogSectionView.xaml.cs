@@ -160,6 +160,34 @@ public partial class CatalogSectionView : SectionViewBase
         });
     }
 
+    private void CreateLowStockSupplyDraftButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ExecuteWithHandling(() =>
+        {
+            var vm = RequireViewModel();
+            var result = vm.CreateLowStockSupplyDraft();
+
+            if (result.SupplyId == 0)
+            {
+                MessageBox.Show(
+                    OwnerWindow,
+                    "Критических остатков не найдено. Черновик поставки не создан.",
+                    "TeaShopManager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            vm.NavigateToSection("Supplies");
+            MessageBox.Show(
+                OwnerWindow,
+                $"Черновик поставки #{result.SupplyId} создан. Добавлено позиций: {result.PositionsCount}. Поставщик установлен как системная заглушка, статус - Новый.",
+                "TeaShopManager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        });
+    }
+
     private void ProductsDataGrid_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         ExecuteWithHandling(() =>

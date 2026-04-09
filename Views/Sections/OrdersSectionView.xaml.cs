@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using TeaShopManager.Models;
 using TeaShopManager.Views;
 
@@ -106,6 +108,29 @@ public partial class OrdersSectionView : SectionViewBase
             {
                 vm.DeleteOrderDetail(item.OrderId, item.ProductId);
             }
+        });
+    }
+
+    private void OrdersDataGrid_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        ExecuteWithHandling(() =>
+        {
+            if (FindVisualParent<Button>(e.OriginalSource as DependencyObject) is not null)
+            {
+                return;
+            }
+
+            if (FindVisualParent<DataGridRow>(e.OriginalSource as DependencyObject) is null)
+            {
+                return;
+            }
+
+            if (sender is not DataGrid { SelectedItem: OrderPreviewItem })
+            {
+                return;
+            }
+
+            RequireViewModel().NavigateToSection("OrderDetails");
         });
     }
 }

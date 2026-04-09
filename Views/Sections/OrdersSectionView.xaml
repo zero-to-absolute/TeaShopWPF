@@ -97,7 +97,8 @@
                 <DataGrid Grid.Row="1"
                           Margin="0,20,0,0"
                           Style="{StaticResource ShellDataGridStyle}"
-                          ItemsSource="{Binding Orders}">
+                          ItemsSource="{Binding Orders}"
+                          MouseDoubleClick="OrdersDataGrid_OnMouseDoubleClick">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Код заказа" Binding="{Binding OrderCode}" Width="150" />
                         <DataGridTextColumn Header="Дата заказа" Binding="{Binding OrderDate}" Width="200" />

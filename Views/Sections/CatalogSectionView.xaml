@@ -135,11 +135,19 @@
                         </StackPanel>
                     </Border>
 
-                    <Button Grid.Column="1"
-                            Width="160"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Content="Добавить товар"
-                            Click="AddProductButton_OnClick" />
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal">
+                        <Button Width="210"
+                                Margin="0,0,12,0"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Visibility="{Binding CanCreateSupplyDrafts, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Content="Проверить остатки"
+                                Click="CreateLowStockSupplyDraftButton_OnClick" />
+                        <Button Width="160"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Content="Добавить товар"
+                                Click="AddProductButton_OnClick" />
+                    </StackPanel>
                 </Grid>
 
                 <Border Grid.Row="1"

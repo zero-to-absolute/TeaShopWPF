@@ -46,7 +46,8 @@
                 <DataGrid Grid.Row="1"
                           Margin="0,20,0,0"
                           Style="{StaticResource ShellDataGridStyle}"
-                          ItemsSource="{Binding Supplies}">
+                          ItemsSource="{Binding Supplies}"
+                          MouseDoubleClick="SuppliesDataGrid_OnMouseDoubleClick">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Код поставки" Binding="{Binding SupplyCode}" Width="130" />
                         <DataGridTextColumn Header="Дата создания" Binding="{Binding CreationDate}" Width="160" />

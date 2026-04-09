@@ -575,6 +575,19 @@ public sealed class ShellViewModel : ViewModelBase
             .ToList();
     }
 
+    public void NavigateToSection(string sectionKey)
+    {
+        var navigationItem = NavigationItems.FirstOrDefault(item => string.Equals(item.SectionKey, sectionKey, StringComparison.Ordinal));
+        if (navigationItem is not null)
+        {
+            SelectedNavigationItem = navigationItem;
+            return;
+        }
+
+        CurrentSectionKey = sectionKey;
+        PageTitle = GetSectionTitle(sectionKey);
+    }
+
     public void SaveUser(UserEditorModel model)
     {
         EnsurePermission(CanManageUsers, "Только администратор может управлять пользователями.");
@@ -757,6 +770,17 @@ public sealed class ShellViewModel : ViewModelBase
         RefreshSupplyData();
         RefreshInventoryData();
         RefreshNotificationData();
+    }
+
+    public (int SupplyId, int PositionsCount) CreateLowStockSupplyDraft()
+    {
+        EnsurePermission(CanCreateSupplyDrafts, "Недостаточно прав для проверки остатков и формирования черновика поставки.");
+
+        var result = _repository.CreateLowStockSupplyDraft(CurrentUser.UserId);
+        ReplaceCollection(Suppliers, _repository.GetSuppliers());
+        ReplaceCollection(StatusSupplies, _repository.GetStatusSupplies());
+        RefreshSupplyData();
+        return result;
     }
 
     public void DeleteSupply(int supplyId)
@@ -1239,6 +1263,7 @@ public sealed class ShellViewModel : ViewModelBase
             AddNavigationItem(items, sections, new NavigationItem { SectionKey = "Categories", Title = "Категории", IconGlyph = "\uE8FD" });
             AddNavigationItem(items, sections, new NavigationItem { SectionKey = "Suppliers", Title = "Управление поставщиками", IconGlyph = "\uE7BF" });
             AddNavigationItem(items, sections, new NavigationItem { SectionKey = "Orders", Title = "Заказы", IconGlyph = "\uE8A1" });
+            AddNavigationItem(items, sections, new NavigationItem { SectionKey = "OrderDetails", Title = "Состав заказов", IconGlyph = "\uE8A1" });
             AddNavigationItem(items, sections, new NavigationItem { SectionKey = "Notifications", Title = "Уведомления", IconGlyph = "\uE7F4", HasAttentionMark = true });
             AddNavigationItem(items, sections, new NavigationItem { SectionKey = "Supplies", Title = "Поставки", IconGlyph = "\uE7BF" });
             AddNavigationItem(items, sections, new NavigationItem { SectionKey = "SupplyDetails", Title = "Состав поставок", IconGlyph = "\uE8D2" });
@@ -1327,6 +1352,7 @@ public sealed class ShellViewModel : ViewModelBase
     private bool CanPerformSales => IsAdminRole || IsSellerRole;
     private bool CanViewProducts => IsAdminRole || IsManagerRole || IsSellerRole;
     private bool CanCreateCustomerReturns => IsAdminRole || IsManagerRole || IsSellerRole;
+    public bool CanCreateSupplyDrafts => CanManageSupplies && CanViewProducts;
 
     private static void EnsurePermission(bool isAllowed, string message)
     {
@@ -1334,6 +1360,30 @@ public sealed class ShellViewModel : ViewModelBase
         {
             throw new InvalidOperationException(message);
         }
+    }
+
+    private static string GetSectionTitle(string sectionKey)
+    {
+        return sectionKey switch
+        {
+            "Users" => "Управление пользователями",
+            "Roles" => "Роли",
+            "Categories" => "Категории",
+            "Products" => "Управление товарами",
+            "Suppliers" => "Управление поставщиками",
+            "StatusOrders" => "Статусы заказов",
+            "StatusSupplies" => "Статусы поставок",
+            "Orders" => "Заказы",
+            "OrderDetails" => "Состав заказов",
+            "Notifications" => "Уведомления",
+            "Supplies" => "Поставки",
+            "SupplyDetails" => "Состав поставок",
+            "Losses" => "Списания",
+            "Reports" => "Отчёты",
+            "Sales" => "Продажа",
+            "Settings" => "Настройки",
+            _ => sectionKey
+        };
     }
 }
 

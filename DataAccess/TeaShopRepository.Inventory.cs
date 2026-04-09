@@ -6,6 +6,77 @@ namespace TeaShopManager.DataAccess;
 
 public sealed partial class TeaShopRepository
 {
+    public (int SupplyId, int PositionsCount) CreateLowStockSupplyDraft(int userId)
+    {
+        if (userId <= 0)
+        {
+            throw new InvalidOperationException("Не удалось определить пользователя для формирования черновика поставки.");
+        }
+
+        using var connection = OpenConnection();
+        EnsureLossQuantityColumn(connection);
+        using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
+
+        try
+        {
+            var criticalProducts = GetCriticalProducts(connection, transaction);
+            if (criticalProducts.Count == 0)
+            {
+                transaction.Commit();
+                return (0, 0);
+            }
+
+            var statusId = GetDraftSupplyStatusId(connection, transaction);
+            var supplierId = GetOrCreateSystemSupplierId(connection, transaction);
+
+            const string supplySql =
+                """
+                INSERT INTO SUPPLIES (CREATION_DATE, DELIVERY_DATE, ID_STATUS, ID_SUPPLIER, ID_USER)
+                OUTPUT INSERTED.ID_SUPPLIES
+                VALUES (@creationDate, @deliveryDate, @statusId, @supplierId, @userId);
+                """;
+
+            int supplyId;
+            using (var supplyCommand = new SqlCommand(supplySql, connection, transaction))
+            {
+                supplyCommand.Parameters.Add("@creationDate", SqlDbType.Date).Value = DateTime.Today;
+                supplyCommand.Parameters.Add("@deliveryDate", SqlDbType.Date).Value = DBNull.Value;
+                supplyCommand.Parameters.Add("@statusId", SqlDbType.Int).Value = statusId;
+                supplyCommand.Parameters.Add("@supplierId", SqlDbType.Int).Value = supplierId;
+                supplyCommand.Parameters.Add("@userId", SqlDbType.Int).Value = userId;
+                supplyId = Convert.ToInt32(supplyCommand.ExecuteScalar());
+            }
+
+            const string detailSql =
+                """
+                INSERT INTO SUPPLIES_DETAILS (ID_PRODUCT, ID_SUPPLIES, QUANTITY, UNIT_PRICE, PRODUCTION_DATE)
+                VALUES (@productId, @supplyId, @quantity, @unitPrice, @productionDate);
+                """;
+
+            foreach (var product in criticalProducts)
+            {
+                using var detailCommand = new SqlCommand(detailSql, connection, transaction);
+                detailCommand.Parameters.Add("@productId", SqlDbType.Int).Value = product.ProductId;
+                detailCommand.Parameters.Add("@supplyId", SqlDbType.Int).Value = supplyId;
+                detailCommand.Parameters.Add("@quantity", SqlDbType.Int).Value = Math.Max(1, product.MinStockQuantity - product.StockQuantity);
+                detailCommand.Parameters.Add("@unitPrice", SqlDbType.Decimal).Value = GetSuggestedSupplyDraftUnitPrice(connection, transaction, product.ProductId);
+                detailCommand.Parameters["@unitPrice"].Precision = 8;
+                detailCommand.Parameters["@unitPrice"].Scale = 2;
+                // До фактической приёмки дата производства неизвестна, поэтому в черновике ставим временное значение.
+                detailCommand.Parameters.Add("@productionDate", SqlDbType.Date).Value = DateTime.Today;
+                detailCommand.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+            return (supplyId, criticalProducts.Count);
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
     public void SaveSupply(SupplyEditorModel model)
     {
         using var connection = OpenConnection();

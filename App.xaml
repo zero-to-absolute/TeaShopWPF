@@ -194,6 +194,7 @@
 
         <Style x:Key="ShellDataGridStyle" TargetType="DataGrid">
             <Setter Property="AutoGenerateColumns" Value="False" />
+            <Setter Property="FontSize" Value="16" />
             <Setter Property="HeadersVisibility" Value="Column" />
             <Setter Property="GridLinesVisibility" Value="Horizontal" />
             <Setter Property="CanUserAddRows" Value="False" />
@@ -210,13 +211,14 @@
             <Setter Property="VerticalGridLinesBrush" Value="Transparent" />
             <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
             <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
-            <Setter Property="ColumnHeaderHeight" Value="50" />
-            <Setter Property="RowHeight" Value="58" />
+            <Setter Property="ColumnHeaderHeight" Value="56" />
+            <Setter Property="RowHeight" Value="64" />
             <Setter Property="ColumnHeaderStyle">
                 <Setter.Value>
                     <Style TargetType="DataGridColumnHeader">
                         <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
                         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                        <Setter Property="FontSize" Value="16" />
                         <Setter Property="FontWeight" Value="SemiBold" />
                         <Setter Property="Padding" Value="14,0" />
                         <Setter Property="BorderThickness" Value="0" />
@@ -231,6 +233,7 @@
                         <Setter Property="BorderThickness" Value="0" />
                         <Setter Property="Background" Value="Transparent" />
                         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                        <Setter Property="FontSize" Value="16" />
                         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                         <Setter Property="VerticalContentAlignment" Value="Center" />
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />

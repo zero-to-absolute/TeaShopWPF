@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using TeaShopManager.Models;
 using TeaShopManager.Views;
 
@@ -174,6 +176,29 @@ public partial class InventorySectionView : SectionViewBase
             {
                 vm.DeleteLoss(item.LossId);
             }
+        });
+    }
+
+    private void SuppliesDataGrid_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        ExecuteWithHandling(() =>
+        {
+            if (FindVisualParent<Button>(e.OriginalSource as DependencyObject) is not null)
+            {
+                return;
+            }
+
+            if (FindVisualParent<DataGridRow>(e.OriginalSource as DependencyObject) is null)
+            {
+                return;
+            }
+
+            if (sender is not DataGrid { SelectedItem: SupplyPreviewItem })
+            {
+                return;
+            }
+
+            RequireViewModel().NavigateToSection("SupplyDetails");
         });
     }
 }

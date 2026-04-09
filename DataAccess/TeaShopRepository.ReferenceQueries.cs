@@ -331,7 +331,7 @@ public sealed partial class TeaShopRepository
                 NotificationType = reader["NOTIFICATION_TYPE"]?.ToString() ?? string.Empty,
                 Message = reader["MESSAGE"]?.ToString() ?? string.Empty,
                 CreatedAt = Convert.ToDateTime(reader["CREATED_DATE"]).ToString("dd.MM.yyyy HH:mm"),
-                ReadState = Convert.ToBoolean(reader["IS_READ"]) ? "Да" : "Нет"
+                ReadState = Convert.ToBoolean(reader["IS_READ"]) ? "Прочитано" : "Непрочитано"
             });
         }
 

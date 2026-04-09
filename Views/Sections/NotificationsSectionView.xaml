@@ -54,7 +54,7 @@
                     <DataGridTextColumn Header="Тип уведомления" Binding="{Binding NotificationType}" Width="170" />
                     <DataGridTextColumn Header="Сообщение" Binding="{Binding Message}" Width="*" />
                     <DataGridTextColumn Header="Дата создания" Binding="{Binding CreatedAt}" Width="170" />
-                    <DataGridTextColumn Header="Статус" Binding="{Binding ReadState}" Width="140" />
+                    <DataGridTextColumn Header="Статус" Binding="{Binding ReadState}" Width="180" />
                     <DataGridTemplateColumn Header="Действия" Width="320">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>

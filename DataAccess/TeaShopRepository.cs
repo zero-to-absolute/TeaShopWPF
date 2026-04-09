@@ -8,6 +8,13 @@ public sealed partial class TeaShopRepository
 {
     private const string LowStockNotificationType = "Минимальный остаток";
     private const string CustomerReturnSupplierName = "Возврат покупателя";
+    private const string SystemSupplierName = "Выберите поставщика";
+    private const string SystemSupplierLegacyAlias = "system";
+    private const string SystemSupplierContactName = "system";
+    private const string SystemSupplierPhone = "+7-000-000-00-00";
+    private const string SystemSupplierEmail = "system@null.com";
+    private const string SystemSupplierAddress = "-";
+    private const string DraftSupplyStatusName = "Новый";
     private const string TeaCategoryName = "Чай";
     private readonly object _schemaSyncRoot = new();
     private bool _lossQuantityColumnChecked;
@@ -180,6 +187,40 @@ public sealed partial class TeaShopRepository
             INSERT INTO STATUS_SUPPLIES (NAME)
             OUTPUT INSERTED.ID_STATUS
             VALUES (N'Принята');
+            """;
+
+        using var insertCommand = new SqlCommand(insertSql, connection, transaction);
+        return Convert.ToInt32(insertCommand.ExecuteScalar());
+    }
+
+    private int GetDraftSupplyStatusId(SqlConnection connection, SqlTransaction transaction)
+    {
+        const string sql =
+            """
+            SELECT TOP (1) ID_STATUS
+            FROM STATUS_SUPPLIES
+            WHERE NAME LIKE N'Нов%'
+            ORDER BY CASE
+                WHEN NAME = N'Новый' THEN 0
+                ELSE 1
+            END,
+            ID_STATUS;
+            """;
+
+        using (var command = new SqlCommand(sql, connection, transaction))
+        {
+            var result = command.ExecuteScalar();
+            if (result is not null)
+            {
+                return Convert.ToInt32(result);
+            }
+        }
+
+        const string insertSql =
+            """
+            INSERT INTO STATUS_SUPPLIES (NAME)
+            OUTPUT INSERTED.ID_STATUS
+            VALUES (N'Новый');
             """;
 
         using var insertCommand = new SqlCommand(insertSql, connection, transaction);
@@ -709,6 +750,83 @@ public sealed partial class TeaShopRepository
         insertCommand.Parameters.Add("@email", SqlDbType.VarChar, 100).Value = DBNull.Value;
         insertCommand.Parameters.Add("@address", SqlDbType.VarChar, 4000).Value = "Возврат через приложение";
         return Convert.ToInt32(insertCommand.ExecuteScalar());
+    }
+
+    private int GetOrCreateSystemSupplierId(SqlConnection connection, SqlTransaction transaction)
+    {
+        const string selectSql =
+            """
+            SELECT TOP (1) ID_SUPPLIER
+            FROM SUPPLIERS
+            WHERE UPPER(LTRIM(RTRIM(SUPPLIER_NAME))) IN (UPPER(@name), UPPER(@legacyAlias))
+               OR UPPER(LTRIM(RTRIM(CONTACT_PERSON))) = UPPER(@legacyAlias)
+               OR UPPER(LTRIM(RTRIM(EMAIL))) = UPPER(@email)
+            ORDER BY CASE
+                WHEN UPPER(LTRIM(RTRIM(SUPPLIER_NAME))) = UPPER(@name) THEN 0
+                WHEN UPPER(LTRIM(RTRIM(SUPPLIER_NAME))) = UPPER(@legacyAlias) THEN 1
+                WHEN UPPER(LTRIM(RTRIM(CONTACT_PERSON))) = UPPER(@legacyAlias) THEN 2
+                ELSE 3
+            END,
+            ID_SUPPLIER;
+            """;
+
+        using (var selectCommand = new SqlCommand(selectSql, connection, transaction))
+        {
+            selectCommand.Parameters.Add("@name", SqlDbType.VarChar, 4000).Value = SystemSupplierName;
+            selectCommand.Parameters.Add("@legacyAlias", SqlDbType.VarChar, 4000).Value = SystemSupplierLegacyAlias;
+            selectCommand.Parameters.Add("@email", SqlDbType.VarChar, 100).Value = SystemSupplierEmail;
+            var existing = selectCommand.ExecuteScalar();
+            if (existing is not null)
+            {
+                return Convert.ToInt32(existing);
+            }
+        }
+
+        const string insertSql =
+            """
+            INSERT INTO SUPPLIERS (SUPPLIER_NAME, CONTACT_PERSON, PHONE, EMAIL, ADDRESS)
+            OUTPUT INSERTED.ID_SUPPLIER
+            VALUES (@name, @contactPerson, @phone, @email, @address);
+            """;
+
+        using var insertCommand = new SqlCommand(insertSql, connection, transaction);
+        insertCommand.Parameters.Add("@name", SqlDbType.VarChar, 4000).Value = SystemSupplierName;
+        insertCommand.Parameters.Add("@contactPerson", SqlDbType.VarChar, 4000).Value = SystemSupplierContactName;
+        insertCommand.Parameters.Add("@phone", SqlDbType.VarChar, 20).Value = SystemSupplierPhone;
+        insertCommand.Parameters.Add("@email", SqlDbType.VarChar, 100).Value = SystemSupplierEmail;
+        insertCommand.Parameters.Add("@address", SqlDbType.VarChar, 4000).Value = SystemSupplierAddress;
+        return Convert.ToInt32(insertCommand.ExecuteScalar());
+    }
+
+    private decimal GetSuggestedSupplyDraftUnitPrice(SqlConnection connection, SqlTransaction transaction, int productId)
+    {
+        var sql =
+            $"""
+            SELECT
+                COALESCE(lastSupply.UNIT_PRICE, p.PRICE) AS SUGGESTED_UNIT_PRICE
+            FROM PRODUCTS p
+            OUTER APPLY (
+                SELECT TOP (1) sd.UNIT_PRICE
+                FROM SUPPLIES_DETAILS sd
+                INNER JOIN SUPPLIES s ON s.ID_SUPPLIES = sd.ID_SUPPLIES
+                INNER JOIN STATUS_SUPPLIES ss ON ss.ID_STATUS = s.ID_STATUS
+                WHERE sd.ID_PRODUCT = p.ID_PRODUCT
+                  AND ({AcceptedSupplyStatusCondition})
+                ORDER BY COALESCE(s.DELIVERY_DATE, s.CREATION_DATE) DESC, sd.ID_SUPPLIES DESC
+            ) lastSupply
+            WHERE p.ID_PRODUCT = @productId;
+            """;
+
+        using var command = new SqlCommand(sql, connection, transaction);
+        command.Parameters.Add("@productId", SqlDbType.Int).Value = productId;
+        var result = command.ExecuteScalar();
+
+        if (result is null || result == DBNull.Value)
+        {
+            throw new InvalidOperationException($"Не удалось определить цену для товара {productId}.");
+        }
+
+        return Convert.ToDecimal(result);
     }
 
     private void EnsureSupplyIsEditable(SqlConnection connection, SqlTransaction? transaction, int supplyId)
