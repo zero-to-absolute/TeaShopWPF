@@ -11,6 +11,7 @@
   <ItemGroup>
     <Page Remove="MainWindow.xaml" />
     <Compile Remove="MainWindow.xaml.cs" />
+    <Compile Remove="TeaShopManager.Tests\**\*.cs" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.7" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
   </ItemGroup>
